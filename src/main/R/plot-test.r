@@ -1,6 +1,7 @@
 ### Plots antenna patterns produced by running the test suite
 
 pdf("plot.pdf", width=4, height=4)
+cat(par("mar"))
 par(mar=c(3.1,4.1,4.1,2.1))
 x = read.csv("/Users/tdunning/Apache/cell-sim/beam-1.csv")
 y = read.csv("/Users/tdunning/Apache/cell-sim/beam-2.csv")

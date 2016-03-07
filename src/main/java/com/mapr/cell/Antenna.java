@@ -26,6 +26,7 @@ public class Antenna {
 
     // square of reference distance. We should normally be farther than r0 from source
     private double r0Squared;
+    private long id;
 
     public Antenna() {
         this(0.9, 3, 200e-3, 0.01, 0, 0, 0);
@@ -78,8 +79,8 @@ public class Antenna {
     /**
      * Returns the antenna gain in any particular direction
      *
-     * @param theta
-     * @return
+     * @param theta The direction relative to the primary axis of the antenna.
+     * @return The linear gain of the antenna in the desired direction.
      */
     public double antennaGain(double theta) {
         double directivity = scale * (1 - eccentricity * eccentricity) / (1 - eccentricity * Math.cos(theta));
@@ -93,5 +94,13 @@ public class Antenna {
 
     public void setLobes(int lobes) {
         this.lobes = lobes;
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public double distance(double x, double y) {
+        return Math.hypot(x - this.x0, y - this.y0);
     }
 }
