@@ -92,9 +92,11 @@ public class Messages {
      */
     public static class Disconnect {
         String callerId;
+        final CDR cdr;
 
-        public Disconnect(String callerId) {
+        public Disconnect(String callerId, CDR cdr) {
             this.callerId = callerId;
+            this.cdr = cdr;
         }
     }
 
@@ -103,9 +105,13 @@ public class Messages {
      */
     public static class Hello {
         public final ActorRef caller;
+        final CDR cdr;
+        boolean reconnect;
 
-        public Hello(ActorRef self) {
+        public Hello(ActorRef self, CDR cdr, boolean reconnect) {
             this.caller = self;
+            this.cdr = cdr;
+            this.reconnect = reconnect;
         }
     }
 

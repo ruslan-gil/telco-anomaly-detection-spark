@@ -31,6 +31,13 @@ public class Caller extends UntypedActor {
     private double x;
     private double y;
 
+    //current destination position
+    private double xDest;
+    private double yDest;
+
+    private double xSpeed;
+    private double ySpeed;
+
     // used to broadcast to all towers
     private ActorRef towers;
 
@@ -50,6 +57,7 @@ public class Caller extends UntypedActor {
 
     // we keep a dictionary of all known towers
     private Map<String, Report> signals;
+    private CDR cdr;
 
     private static class Report {
         // when to remove this report
@@ -78,6 +86,24 @@ public class Caller extends UntypedActor {
 
         x = rand.nextDouble() * 20e3;
         y = rand.nextDouble() * 20e3;
+        generateMoveParams();
+    }
+
+
+    private void generateMoveParams() {
+        xDest = rand.nextDouble() * 20e3;
+        yDest = rand.nextDouble() * 20e3;
+        double travelTime = rand.nextDouble() * 1000;
+        xSpeed = (xDest - x) / travelTime;
+        ySpeed = (yDest - y) / travelTime;
+    }
+
+    private void move() {
+        if (1 > Math.sqrt(Math.pow(x - xDest, 2) + Math.pow(y - yDest, 2))) {
+            generateMoveParams();
+        }
+        x += xSpeed;
+        y += ySpeed;
     }
 
     @Override
@@ -86,6 +112,7 @@ public class Caller extends UntypedActor {
             towers = ((Messages.Setup) message).towers;
         } else if (message instanceof Messages.Tick) {
             time++;
+            move();
             // every so often, we need to ask for a signal report
             if (time > nextHeartBeat) {
                 nextHeartBeat = time + HEARTBEAT_MIN + HEARTBEAT_SPREAD * rand.nextDouble();
@@ -151,7 +178,8 @@ public class Caller extends UntypedActor {
                     sortCandidates();
                     tryNextTower();
                 } else if (time > endCall) {
-                    currentTower.tell(new Messages.Disconnect(id));
+                    cdr.finishCDR(time);
+                    currentTower.tell(new Messages.Disconnect(id, cdr.cloneCDR()));
                     currentTower = null;
                     currentTowerId = null;
                     live = null;
@@ -178,10 +206,16 @@ public class Caller extends UntypedActor {
     }
 
     private void tryNextTower() {
+        if (!live.hasNext()){
+            return;
+        }
         Report r = live.next();
         connectTimeout = time + CONNECT_TIMEOUT;
         System.out.printf("At %.0f setting timeout to %.0f\n", time, connectTimeout);
-        r.report.tower.tell(new Messages.Hello(getSelf()));
+        cdr = new CDR(id, time);
+
+        cdr.setTowerId(r.report.towerId);
+        r.report.tower.tell(new Messages.Hello(getSelf(), cdr.cloneCDR(), currentTower != null));
     }
 
     private void log(Messages.Log e) {

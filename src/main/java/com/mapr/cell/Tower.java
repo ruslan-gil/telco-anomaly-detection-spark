@@ -33,14 +33,26 @@ public class Tower extends UntypedActor {
                 m.source.tell(new Messages.SignalReport(r, p, id, getSelf()));
             }
         } else if (message instanceof Messages.Hello) {
+            Messages.Hello helloMessage = (Messages.Hello) message;
             double u = rand.nextDouble();
             if (u < 0.8) {
-                ((Messages.Hello) message).caller.tell(new Messages.Connect(id, getSelf()));
+                System.out.printf("Start call caller %s to tower %s\n", ((Messages.Hello) message).cdr.getCallerId(), id );
+                helloMessage.caller.tell(new Messages.Connect(id, getSelf()));
+                System.out.println("Connect CDR sent: " + ((Messages.Hello) message).cdr.toJSONObject());
+
+                if (((Messages.Hello) message).reconnect) {
+                    ((Messages.Hello) message).cdr.setState(CDR.State.RECONNECT);
+                    System.out.println("Reconnect CDR sent: " + ((Messages.Hello) message).cdr.toJSONObject());
+                }
             } else if (u < 0.95) {
-                ((Messages.Hello) message).caller.tell(new Messages.Fail(id));
+                System.out.printf("Failed call caller %s to tower %s\n", ((Messages.Hello) message).cdr.getCallerId(), id );
+                helloMessage.caller.tell(new Messages.Fail(id));
             } else {
                 // ignore request occasionally ... it will make the caller stronger
             }
+        } else if (message instanceof Messages.Disconnect) {
+            System.out.printf("Finished call caller %s to tower %s\n", ((Messages.Disconnect) message).callerId, id );
+            System.out.println("Finished CDR sent: " + ((Messages.Disconnect) message).cdr.toJSONObject());
         } else {
             unhandled(message);
         }
