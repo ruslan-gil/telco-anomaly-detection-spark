@@ -8,7 +8,7 @@ import java.lang.reflect.InvocationTargetException;
 
 public class CDR {
     enum State{
-        CONNECT, RECONNECT, FINISHED;
+        CONNECT, RECONNECT, FINISHED, FAIL
     }
 
     private String callerId;
@@ -16,16 +16,19 @@ public class CDR {
     private String towerId;
     private Double duration;
     private State state;
+    private double x;
+    private double y;
 
     public CDR() {
     }
 
-    public CDR(String id, double time) {
+    public CDR(String id, double time, double x, double y) {
         callerId = id;
+        this.x = x;
+        this.y = y;
         callStartTime = time;
         state = State.CONNECT;
     }
-
 
     public CDR(String callerId, Double callStartTime, String towerId, Double duration, State state) {
         this.callerId = callerId;
@@ -33,6 +36,23 @@ public class CDR {
         this.towerId = towerId;
         this.duration = duration;
         this.state = state;
+    }
+
+
+    public double getX() {
+        return x;
+    }
+
+    public void setX(double x) {
+        this.x = x;
+    }
+
+    public double getY() {
+        return y;
+    }
+
+    public void setY(double y) {
+        this.y = y;
     }
 
     public String getCallerId() {
@@ -88,6 +108,8 @@ public class CDR {
                     .put("callerId", callerId)
                     .put("duration", duration)
                     .put("towerId", towerId)
+                    .put("x", x)
+                    .put("y", y)
                     .put("state", state.name());
         } catch (JSONException e) {
             e.printStackTrace();
@@ -112,6 +134,8 @@ public class CDR {
                 ", towerId='" + towerId + '\'' +
                 ", duration=" + duration +
                 ", state=" + state +
+                ", x=" + x +
+                ", y=" + y +
                 '}';
     }
 }

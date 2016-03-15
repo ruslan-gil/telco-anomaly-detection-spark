@@ -104,6 +104,8 @@ public class Caller extends UntypedActor {
         }
         x += xSpeed;
         y += ySpeed;
+        cdr.setX(x);
+        cdr.setY(y);
     }
 
     @Override
@@ -212,7 +214,7 @@ public class Caller extends UntypedActor {
         Report r = live.next();
         connectTimeout = time + CONNECT_TIMEOUT;
         System.out.printf("At %.0f setting timeout to %.0f\n", time, connectTimeout);
-        cdr = new CDR(id, time);
+        cdr = new CDR(id, time, x, y);
 
         cdr.setTowerId(r.report.towerId);
         r.report.tower.tell(new Messages.Hello(getSelf(), cdr.cloneCDR(), currentTower != null));
