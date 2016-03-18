@@ -1,13 +1,17 @@
 package com.mapr.cell;
 
+
 import org.apache.commons.beanutils.BeanUtils;
+import org.apache.commons.beanutils.BeanUtilsBean;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Map;
 
-public class CDR {
-    enum State{
+public class CDR implements Serializable{
+    public enum State{
         CONNECT, RECONNECT, FINISHED, FAIL
     }
 
@@ -30,14 +34,15 @@ public class CDR {
         state = State.CONNECT;
     }
 
-    public CDR(String callerId, Double callStartTime, String towerId, Double duration, State state) {
+    public CDR(String callerId, Double callStartTime, String towerId, Double duration, State state, double x, double y) {
         this.callerId = callerId;
         this.callStartTime = callStartTime;
         this.towerId = towerId;
         this.duration = duration;
         this.state = state;
+        this.x = x;
+        this.y = y;
     }
-
 
     public double getX() {
         return x;
@@ -124,6 +129,20 @@ public class CDR {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static CDR stringToCDR(String jsonStr) {
+        CDR cdr = new CDR();
+        JSONObject json = new JSONObject(jsonStr);
+        Map<String, Object> jsonMap = Utils.jsonToMap(json);
+        jsonMap.put("state", CDR.State.valueOf((String) jsonMap.get("state")));
+        try {
+            BeanUtilsBean.getInstance().getConvertUtils().register(false, false, 0);
+            BeanUtils.populate(cdr, jsonMap);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            throw new IllegalArgumentException("Can not convert record document");
+        }
+        return cdr;
     }
 
     @Override
