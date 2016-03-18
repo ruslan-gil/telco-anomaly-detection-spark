@@ -11,5 +11,89 @@
 
     <artifactId>spark-consumer</artifactId>
 
+    <repositories>
+        <repository>
+            <id>mapr-releases</id>
+            <url>http://repository.mapr.com/maven/</url>
+            <snapshots><enabled>true</enabled></snapshots>
+            <releases><enabled>true</enabled></releases>
+        </repository>
+
+        <repository>
+            <id>mapr-private</id>
+            <url>http://repository_cv.mapr.com/maven/</url>
+            <snapshots><enabled>true</enabled></snapshots>
+            <releases><enabled>true</enabled></releases>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>19.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>0.9.0.0-mapr-1602</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>1.9.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20160212</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-yarn_2.10</artifactId>
+            <version>1.5.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-streaming-kafka-v09_2.10</artifactId>
+            <version>1.5.2-mapr-1602</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_2.10</artifactId>
+            <version>1.5.2-mapr-1602</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-streaming_2.10</artifactId>
+            <version>1.5.2-mapr-1602</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.google.guava</groupId>
+                <artifactId>guava</artifactId>
+                <version>19.0</version>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

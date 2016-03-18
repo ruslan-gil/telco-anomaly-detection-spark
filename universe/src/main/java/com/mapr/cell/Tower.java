@@ -17,7 +17,7 @@ import java.util.Random;
  * Each tower is an actor that receives messages from Callers.
  */
 public class Tower extends UntypedActor {
-    private static final double MINIMUM_RECEIVE_POWER = -100;
+    private static final double MINIMUM_RECEIVE_POWER = -1000000000;
     private final Random rand;
 
     private Antenna ax;

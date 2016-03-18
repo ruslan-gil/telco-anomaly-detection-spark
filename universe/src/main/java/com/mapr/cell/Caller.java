@@ -104,6 +104,9 @@ public class Caller extends UntypedActor {
         }
         x += xSpeed;
         y += ySpeed;
+        if (cdr == null){
+            return;
+        }
         cdr.setX(x);
         cdr.setY(y);
     }
@@ -115,6 +118,7 @@ public class Caller extends UntypedActor {
         } else if (message instanceof Messages.Tick) {
             time++;
             move();
+            Thread.sleep(50);
             // every so often, we need to ask for a signal report
             if (time > nextHeartBeat) {
                 nextHeartBeat = time + HEARTBEAT_MIN + HEARTBEAT_SPREAD * rand.nextDouble();
@@ -148,7 +152,7 @@ public class Caller extends UntypedActor {
                 }
                 break;
             case CONNECTING:
-                System.out.printf("Connecting at %.0f with timeout at %.0f, %s\n", time, connectTimeout, message.getClass());
+//                System.out.printf("Connecting at %.0f with timeout at %.0f, %s\n", time, connectTimeout, message.getClass());
                 if (time > connectTimeout && live != null && live.hasNext()) {
                     System.out.printf("Timed out at %.0f,%.0f,%s\n", time, connectTimeout, message.getClass().toString());
                     // no answer ... just another form of rejection
@@ -164,7 +168,7 @@ public class Caller extends UntypedActor {
                     currentTowerId = ((Messages.Connect) message).towerId;
                     System.out.printf("Connected at %.0f with refresh at %.0f,%.0f to %s, %s\n", time, refreshCall, endCall, currentTowerId, message.getClass());
                 } else if (message instanceof Messages.Tick) {
-                    System.out.printf("Tick at %.0f with timeout at %.0f, %s\n", time, connectTimeout, message.getClass());
+//                    System.out.printf("Tick at %.0f with timeout at %.0f, %s\n", time, connectTimeout, message.getClass());
                     // ignore
                 } else {
                     // failed to get anybody to talk to us
