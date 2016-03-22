@@ -27,13 +27,15 @@
     <modules>
         <module>universe</module>
         <module>spark-consumer</module>
+        <module>telco-ui</module>
+        <module>common</module>
     </modules>
 
 
     <properties>
         <!-- Java compiler configuration -->
-        <sourceJavaVersion>1.7</sourceJavaVersion>
-        <targetJavaVersion>1.7</targetJavaVersion>
+        <sourceJavaVersion>1.8</sourceJavaVersion>
+        <targetJavaVersion>1.8</targetJavaVersion>
     </properties>
 
 </project>

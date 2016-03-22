@@ -1,15 +1,16 @@
-package com.mapr.cell.spark;
+package com.mapr.cell.common;
 
 import com.google.common.io.Resources;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 
 public class Config {
     public static final String CONFIG_CONF = "config.conf";
+    private static String INIT_TOPIC_NAME = "init";
+
 
     private Properties properties = new Properties();
 
@@ -52,4 +53,10 @@ public class Config {
     public Properties getProperties() {
         return properties;
     }
+
+
+    public static String getInitTopicName() {
+        return INIT_TOPIC_NAME;
+    }
+
 }

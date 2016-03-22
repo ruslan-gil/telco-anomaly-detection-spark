@@ -1,5 +1,7 @@
 package com.mapr.cell;
 
+import org.json.JSONObject;
+
 /**
  * An antenna represents a single RF radiator with a tuned cardioid response and a limited
  * number of shadow creating objects.
@@ -102,5 +104,17 @@ public class Antenna {
 
     public double distance(double x, double y) {
         return Math.hypot(x - this.x0, y - this.y0);
+    }
+
+    public JSONObject toJSONObject(){
+        return new JSONObject()
+                .put("x0", x0)
+                .put("y0", y0)
+                .put("theta0", theta0)
+                .put("eccentricity", eccentricity)
+                .put("lobes", lobes)
+                .put("scale", scale)
+                .put("p0", p0)
+                .put("r0Squared", r0Squared);
     }
 }

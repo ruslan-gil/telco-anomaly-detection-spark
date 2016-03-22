@@ -2,6 +2,7 @@ package com.mapr.cell;
 
 import akka.actor.UntypedActor;
 import com.google.common.io.Resources;
+import com.mapr.cell.common.CDR;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -24,6 +25,7 @@ public class Tower extends UntypedActor {
     private String id;
 
     final String TOPIC_NAME = "/telco:tower%s";
+    final String INIT_NAME = "/telco:init";
 
     private KafkaProducer<String, String> producer;
 
@@ -47,6 +49,7 @@ public class Tower extends UntypedActor {
     public void onReceive(Object message) throws Exception {
         if (message instanceof Messages.Setup) {
             System.out.printf("Setup complete for tower %s\n", id);
+            producer.send(new ProducerRecord<>(INIT_NAME, ax.toJSONObject().put("towerId", id).toString()));
         } else if (message instanceof Messages.SignalReportRequest) {
             Messages.SignalReportRequest m = (Messages.SignalReportRequest) message;
             double r = ax.distance(m.x, m.y);
@@ -83,6 +86,7 @@ public class Tower extends UntypedActor {
             unhandled(message);
         }
     }
+
 
     private void sendToStream(JSONObject jsonObject) {
         producer.send(new ProducerRecord<String, String>(

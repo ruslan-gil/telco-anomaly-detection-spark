@@ -1,4 +1,4 @@
-package com.mapr.cell;
+package com.mapr.cell.common;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
@@ -57,7 +57,7 @@ public class Utils {
     }
 
     public static List<CDR> filter(List<CDR> cdrs, Predicate predicate) throws JSONException {
-        List<CDR> listCopy = new ArrayList<CDR>(cdrs);
+        List<CDR> listCopy = new ArrayList<>(cdrs);
         CollectionUtils.filter(listCopy, predicate);
         return listCopy;
     }

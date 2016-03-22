@@ -1,12 +1,14 @@
 package com.mapr.cell.spark;
 
 import com.google.common.io.Resources;
-import com.mapr.cell.CDR;
-import com.mapr.cell.Utils;
-import org.apache.commons.collections.CollectionUtils;
+import com.mapr.cell.common.CDR;
+import com.mapr.cell.common.Config;
+import com.mapr.cell.common.Utils;
 import org.apache.commons.collections.ListUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
@@ -18,6 +20,7 @@ import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.v09.KafkaUtils;
 import org.json.JSONException;
+import org.json.JSONObject;
 import scala.Tuple2;
 
 import java.io.IOException;
@@ -26,6 +29,7 @@ import java.util.*;
 
 public class Main {
 
+    private final static String TOWER_STATUS_STREAM = "tower_status";
 
     public static void main(String[] args) {
 
@@ -47,6 +51,7 @@ public class Main {
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, new Duration(2000));
 
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(Config.getConfig().getPrefixedProps("kafka."));
+        final KafkaProducer<String, String> producer = new KafkaProducer<>(Config.getConfig().getPrefixedProps("kafka."));
         Set<String> topics = consumer.listTopics().keySet();
         System.out.println(topics);
 
@@ -54,6 +59,7 @@ public class Main {
                 KafkaUtils.createDirectStream(jssc, String.class, String.class,
                         Config.getConfig().getPrefixedMap("kafka."),
                         topics);
+
         JavaDStream<CDR> cdrs = messages.map(new Function<Tuple2<String, String>, String>() {
             @Override
             public String call(Tuple2<String, String> tuple2) {
@@ -79,7 +85,6 @@ public class Main {
                                         return ListUtils.union(l1, l2);
                                     }
                                 });
-//        TODO: check fails count and refactor
         JavaPairDStream<String, Double> towerFails = towerCDRs.mapValues(new Function<List<CDR>, Double>() {
             @Override
             public Double call(List<CDR> cdrs) throws JSONException {
@@ -89,7 +94,21 @@ public class Main {
                         return ((CDR) o).getState() != CDR.State.FAIL;
                     }
                 });
-                return (double) (filtredList.size() / cdrs.size());
+                return  ((double) filtredList.size() / cdrs.size());
+            }
+        });
+
+        towerFails.map(new Function<Tuple2<String, Double>, JSONObject>() {
+            @Override
+            public JSONObject call(Tuple2<String, Double> tuple2) throws JSONException {
+                return new JSONObject().put("towerId", tuple2._1())
+                        .put("fails", tuple2._2());
+            }
+        }).map(new Function<JSONObject, Void>() {
+            @Override
+            public Void call(JSONObject jsonObject) throws Exception {
+                producer.send(new ProducerRecord<String, String>(TOWER_STATUS_STREAM, jsonObject.toString()));
+                return null;
             }
         });
 

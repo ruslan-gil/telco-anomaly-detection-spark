@@ -1,6 +1,7 @@
 package com.mapr.cell;
 
 import akka.actor.ActorRef;
+import com.mapr.cell.common.CDR;
 
 /**
  * Classes for each kind of message

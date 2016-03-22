@@ -1,4 +1,4 @@
-package com.mapr.cell;
+package com.mapr.cell.common;
 
 
 import org.apache.commons.beanutils.BeanUtils;
