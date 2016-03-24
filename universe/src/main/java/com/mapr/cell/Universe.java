@@ -2,6 +2,10 @@ package com.mapr.cell;
 
 import akka.actor.*;
 import akka.routing.BroadcastRouter;
+import com.mapr.cell.common.Config;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.codehaus.jackson.map.ObjectMapper;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -9,28 +13,25 @@ import java.util.concurrent.atomic.AtomicInteger;
  * A world of actors, some of whom are callers, some of whom are towers.
  */
 public class Universe extends UntypedActor {
-    public static final int TOWER_COUNT = 10;
+    public static final int TOWER_COUNT = 20;
     public static final int USER_COUNT = 100;
+
+    private static final String MOVE_TOPIC = "/telco:move";
 
     AtomicInteger finished = new AtomicInteger(0);
     private final ActorRef users;
     private final ActorRef towers;
     private final int total;
+    private KafkaProducer<String, String> producer;
+    ObjectMapper mapper = new ObjectMapper();
 
     public Universe(int userCount, int towerCount) {
+        producer = new KafkaProducer<>(Config.getConfig().getPrefixedProps("kafka."));
         this.total = userCount + towerCount;
-        users = this.getContext().actorOf(new Props(new UntypedActorFactory() {
-            @Override
-            public Actor create() {
-                return new Caller();
-            }
-        }).withRouter(new BroadcastRouter(userCount)));
-        towers = this.getContext().actorOf(new Props(new UntypedActorFactory() {
-            @Override
-            public Actor create() {
-                return new Tower();
-            }
-        }).withRouter(new BroadcastRouter(towerCount)));
+        users = this.getContext().actorOf(new Props((UntypedActorFactory) Caller::new)
+                .withRouter(new BroadcastRouter(userCount)));
+        towers = this.getContext().actorOf(new Props((UntypedActorFactory) Tower::new)
+                .withRouter(new BroadcastRouter(towerCount)));
 
     }
 
@@ -41,6 +42,9 @@ public class Universe extends UntypedActor {
             towers.tell(new Messages.Setup(getSelf(), towers, users));
         } else if (message instanceof Messages.Tick) {
             users.tell(message);
+        } else if (message instanceof Messages.Move) {
+            System.out.println("Produce message: " + mapper.writeValueAsString(message));
+            producer.send(new ProducerRecord<>(MOVE_TOPIC, mapper.writeValueAsString(message)));
         } else {
             unhandled(message);
         }
@@ -48,18 +52,13 @@ public class Universe extends UntypedActor {
 
     public static void main(String[] args) throws InterruptedException {
         ActorSystem system = ActorSystem.create("telco");
-        ActorRef universe = system.actorOf(new Props(new UntypedActorFactory() {
-            @Override
-            public Actor create() {
-                return new Universe(USER_COUNT, TOWER_COUNT);
-            }
-        }));
+        ActorRef universe = system.actorOf(new Props((UntypedActorFactory) () -> new Universe(USER_COUNT, TOWER_COUNT)));
 
         universe.tell(new Messages.Start());
 
         for (int i = 0; i < 10000; i++) {
             universe.tell(new Messages.Tick());
-            Thread.sleep(10);
+            Thread.sleep(100);
         }
     }
 }

@@ -47,6 +47,30 @@ public class Messages {
         }
     }
 
+    public static class Move {
+        final String callerId;
+        final double x;
+        final double y;
+
+        public Move(String callerId, double x, double y) {
+            this.callerId = callerId;
+            this.x = x;
+            this.y = y;
+        }
+
+        public String getCallerId() {
+            return callerId;
+        }
+
+        public double getX() {
+            return x;
+        }
+
+        public double getY() {
+            return y;
+        }
+    }
+
     /**
      * Signal report from tower to caller.
      */

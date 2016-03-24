@@ -72,7 +72,7 @@ public class AntennaTest {
 
     @Test
     public void testPlotShadows() throws FileNotFoundException {
-        Antenna ax = Antenna.shotgun(0, 0, Math.toRadians(30), 10);
+        Antenna ax = Antenna.omni(0, 0);
         ax.setPower(0.1, 0.1);
         ax.setLobes(0);
         try (PrintWriter pw = new PrintWriter(new FileOutputStream("beam-1.csv"))) {

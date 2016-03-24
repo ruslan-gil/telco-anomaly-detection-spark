@@ -9,15 +9,17 @@ import java.util.Properties;
 
 public class Config {
     public static final String CONFIG_CONF = "config.conf";
-    private static String INIT_TOPIC_NAME = "init";
+    public static String INIT_TOPIC_NAME = "init";
+    public static String MOVE_TOPIC_NAME = "move";
 
 
     private Properties properties = new Properties();
-
+    private String streamName;
     private static Config instance;
     private Config() {
         try (InputStream props = Resources.getResource(CONFIG_CONF).openStream()) {
             properties.load(props);
+            streamName = properties.getProperty("kafka.streams.consumer.default.stream");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -52,11 +54,6 @@ public class Config {
 
     public Properties getProperties() {
         return properties;
-    }
-
-
-    public static String getInitTopicName() {
-        return INIT_TOPIC_NAME;
     }
 
 }

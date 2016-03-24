@@ -21,6 +21,8 @@ public class Caller extends UntypedActor {
     private static final double AVERAGE_CALL_LENGTH = 60;
     private static final double CONNECT_TIMEOUT = 15;
 
+    private ActorRef  universe;
+
     private final Random rand;
     private final Queue<Messages.Log> bufferedMessages = new LinkedList<>();
 
@@ -110,12 +112,14 @@ public class Caller extends UntypedActor {
         }
         cdr.setX(x);
         cdr.setY(y);
+        universe.tell(new Messages.Move(id, x, y));
     }
 
     @Override
     public void onReceive(Object message) throws Exception {
         if (message instanceof Messages.Setup) {
             towers = ((Messages.Setup) message).towers;
+            universe = ((Messages.Setup) message).universe;
         } else if (message instanceof Messages.Tick) {
             time++;
             move();
@@ -123,7 +127,7 @@ public class Caller extends UntypedActor {
             // every so often, we need to ask for a signal report
             if (time > nextHeartBeat) {
                 nextHeartBeat = time + HEARTBEAT_MIN + HEARTBEAT_SPREAD * rand.nextDouble();
-                towers.tell(new Messages.SignalReportRequest(getSelf(), x, y));
+            towers.tell(new Messages.SignalReportRequest(getSelf(), x, y));
             }
 
             // check for timeouts of any kind

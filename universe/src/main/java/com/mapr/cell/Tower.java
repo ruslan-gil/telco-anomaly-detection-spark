@@ -3,11 +3,13 @@ package com.mapr.cell;
 import akka.actor.UntypedActor;
 import com.google.common.io.Resources;
 import com.mapr.cell.common.CDR;
+import com.mapr.cell.common.Config;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.json.JSONObject;
+import sun.text.resources.no.CollationData_no;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,18 +32,10 @@ public class Tower extends UntypedActor {
     private KafkaProducer<String, String> producer;
 
     public Tower() {
-
-        try (InputStream props = Resources.getResource("producer.conf").openStream()) {
-            Properties properties = new Properties();
-            properties.load(props);
-            producer = new KafkaProducer<>(properties);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        producer = new KafkaProducer<>(Config.getConfig().getPrefixedProps("kafka."));
         rand = new Random();
         ax = Antenna.omni(rand.nextDouble() * 20e3, rand.nextDouble() * 20e3);
-        ax.setPower(100, 1);
+        ax.setPower(1, 0.01);
         id = String.format("%08x", rand.nextInt());
     }
 

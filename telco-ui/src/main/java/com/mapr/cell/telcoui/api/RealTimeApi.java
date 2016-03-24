@@ -25,6 +25,7 @@ public class RealTimeApi extends EventSourceServlet {
 
         private LiveConsumer poller;
         private ConcurrentLinkedQueue<JSONObject> initQueue = new ConcurrentLinkedQueue<>();
+        private ConcurrentLinkedQueue<JSONObject> moveQueue = new ConcurrentLinkedQueue<>();
 
         public DataSource(LiveConsumer poller) {
             this.poller = poller;
@@ -38,6 +39,7 @@ public class RealTimeApi extends EventSourceServlet {
             System.out.println("opened");
             while (true) {
                 emitInit(emitter);
+                emitMove(emitter);
             }
         }
 
@@ -51,13 +53,29 @@ public class RealTimeApi extends EventSourceServlet {
             } while (value != null);
         }
 
+        private void emitMove(Emitter emitter) throws IOException {
+            JSONObject value;
+            do {
+                value = moveQueue.poll();
+                if (value != null) {
+                    emitter.event("move", value.toString());
+                }
+            } while (value != null);
+        }
+
         @Override
         public void onClose() {
+            poller.unsubscribe(this);
         }
 
         @Override
         public void onNewInitData(JSONObject data) {
             initQueue.add(data);
+        }
+
+        @Override
+        public void onNewMoveData(JSONObject data) {
+            moveQueue.add(data);
         }
     }
 }

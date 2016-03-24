@@ -18,7 +18,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         LOG.info("================================================");
-        LOG.info("   Starting Telemetry UI");
+        LOG.info("   Starting Telco UI");
         LOG.info("================================================\n\n");
 
         Server server = new Server(8080);

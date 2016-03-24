@@ -12,9 +12,9 @@ import java.util.*;
 public class LiveConsumer {
 
     public LiveConsumer() {
-        String initTopic = Config.getInitTopicName();
         List<BaseConsumer> consumers = new ArrayList<>();
-        consumers.add(new InitConsumer(initTopic));
+        consumers.add(new InitConsumer(Config.INIT_TOPIC_NAME));
+        consumers.add(new MoveConsumer(Config.MOVE_TOPIC_NAME));
         consumers.forEach(BaseConsumer::start);
     }
 
@@ -65,8 +65,31 @@ public class LiveConsumer {
         }
     }
 
+    public class MoveConsumer extends BaseConsumer {
+
+        public MoveConsumer(String topic) {
+            super(topic);
+        }
+
+        protected void processRecords(ConsumerRecords<String, String> records) {
+            for(ConsumerRecord<String, String> record : records) {
+                try {
+                    JSONObject recordJSON = new JSONObject(record.value());
+                    onNewMoveData(recordJSON);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
     public void onNewInitData(JSONObject arg) {
         listeners.forEach((l) -> l.onNewInitData(arg));
+    }
+
+
+    public void onNewMoveData(JSONObject arg) {
+        listeners.forEach((l) -> l.onNewMoveData(arg));
     }
 
     private Set<Listener> listeners = Collections.synchronizedSet(new HashSet<>());
@@ -81,6 +104,7 @@ public class LiveConsumer {
 
     public interface Listener {
         void onNewInitData(JSONObject data);
+        void onNewMoveData(JSONObject data);
     }
 
 }
