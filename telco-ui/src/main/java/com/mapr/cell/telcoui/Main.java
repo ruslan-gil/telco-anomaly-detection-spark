@@ -17,27 +17,31 @@ public class Main {
 
 
     public static void main(String[] args) throws Exception {
+	
+	    String httpPort = System.getProperty("demo.http.port", "8080");
+    
+	
         LOG.info("================================================");
-        LOG.info("   Starting Telco UI");
+        LOG.info("   Starting Telco UI on port "+ httpPort);
         LOG.info("================================================\n\n");
 
-        Server server = new Server(8080);
+        Server server = new Server(Integer.parseInt(httpPort));
 
 
         ServletHolder sh = new ServletHolder(ServletContainer.class);
         // Set the package where the services reside
         sh.setInitParameter(ServerProperties.PROVIDER_PACKAGES, "com.mapr.cell.telcoui.api");
-
+        
         sh.setInitOrder(1); // force loading at startup
-
+        
         ResourceHandler resourceHandler = new ResourceHandler();
         resourceHandler.setDirectoriesListed(true);
         resourceHandler.setResourceBase("./telco-ui/src/main/resources/webapp");
 
         ServletContextHandler sch = new ServletContextHandler();
-        sch.addServlet(sh, "/*");
-        sch.addServlet(new ServletHolder(new RealTimeApi()), "/talk");
-
+                sch.addServlet(sh, "/*");
+                sch.addServlet(new ServletHolder(new RealTimeApi()), "/talk");
+        
 
         HandlerList handlers = new HandlerList();
         handlers.setHandlers(new Handler[]{resourceHandler, sch});
