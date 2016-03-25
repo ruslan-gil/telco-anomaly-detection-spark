@@ -3,24 +3,22 @@ package com.mapr.cell.spark;
 import com.google.common.io.Resources;
 import com.mapr.cell.common.CDR;
 import com.mapr.cell.common.Config;
-import com.mapr.cell.common.Utils;
-import org.apache.commons.collections.ListUtils;
-import org.apache.commons.collections.Predicate;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
+import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.v09.KafkaUtils;
-import org.json.JSONException;
-import org.json.JSONObject;
+import org.codehaus.jettison.json.JSONObject;
 import scala.Tuple2;
 
 import java.io.IOException;
@@ -33,7 +31,7 @@ public class Main {
 
     public static void main(String[] args) {
 
-        Properties properties = null;
+        Properties properties;
 
         try (InputStream props = Resources.getResource("config.conf").openStream()) {
             properties = new Properties();
@@ -51,8 +49,13 @@ public class Main {
         JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, new Duration(2000));
 
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(Config.getConfig().getPrefixedProps("kafka."));
-        final KafkaProducer<String, String> producer = new KafkaProducer<>(Config.getConfig().getPrefixedProps("kafka."));
-        Set<String> topics = consumer.listTopics().keySet();
+
+        Set<String> topics = new HashSet<>();
+        for (String topic : consumer.listTopics().keySet()) {
+            if (topic.startsWith(Config.getConfig().getProperties().getProperty("kafka.streams.consumer.default.stream") + ":tower")) {
+                topics.add(topic);
+            }
+        }
         System.out.println(topics);
 
         JavaPairInputDStream<String, String> messages =
@@ -60,63 +63,58 @@ public class Main {
                         Config.getConfig().getPrefixedMap("kafka."),
                         topics);
 
-        JavaDStream<CDR> cdrs = messages.map(new Function<Tuple2<String, String>, String>() {
-            @Override
-            public String call(Tuple2<String, String> tuple2) {
-                return tuple2._2();
-            }
-        }).map(new Function<String, CDR>() {
-            @Override
-            public CDR call(String jsonCDR) {
-                return CDR.stringToCDR(jsonCDR);
-            }
-        });
+        JavaDStream<CDR> cdrs = messages.map((Function<Tuple2<String, String>, String>) Tuple2::_2)
+                .map((Function<String, CDR>) CDR::stringToCDR);
 
+        JavaPairDStream<String, CDR> towerCDRs = cdrs.mapToPair(
+                (PairFunction<CDR, String, CDR>) cdr -> new Tuple2<>(cdr.getTowerId(), cdr));
 
-        JavaPairDStream<String, List<CDR>> towerCDRs = cdrs.mapToPair(
-                new PairFunction<CDR, String, List<CDR>>() {
+        JavaPairDStream<String, Long> towerFails = towerCDRs.
+                filter((Function<Tuple2<String, CDR>, Boolean>) tuple -> tuple._2().getState() == CDR.State.FAIL)
+        .countByValue()
+        .mapToPair((PairFunction<Tuple2<Tuple2<String, CDR>, Long>, String, Long>) tupleFailCounts ->
+                new Tuple2<>(tupleFailCounts._1()._1(), tupleFailCounts._2()));
+
+        JavaPairDStream<String, Long> towerCounts = towerCDRs.countByValue()
+                .mapToPair((PairFunction<Tuple2<Tuple2<String, CDR>, Long>, String, Long>) tupleFailCounts ->
+                        new Tuple2<>(tupleFailCounts._1()._1(), tupleFailCounts._2()));
+
+        JavaPairDStream<String, Double> towerStatus = towerFails.join(towerCounts)
+                .mapValues((Function<Tuple2<Long, Long>, Double>) tuple -> ((double) tuple._1() )/ tuple._2());
+
+//        KafkaUtils.
+
+        towerStatus.map((Function<Tuple2<String, Double>, String>) tuple2 ->
+                new JSONObject().put("towerId", tuple2._1()).put("fails", tuple2._2()).toString())
+                .foreach(new Function<JavaRDD<String>, Void>() {
                     @Override
-                    public Tuple2<String, List<CDR>> call(CDR cdr) throws Exception {
-                        return new Tuple2<>(cdr.getTowerId(), Collections.singletonList(cdr));
-                    }
-                }).reduceByKey(new Function2<List<CDR>, List<CDR>, List<CDR>>() {
-                                    @Override
-                                    public List<CDR> call(List<CDR> l1, List<CDR> l2) {
-                                        return ListUtils.union(l1, l2);
-                                    }
-                                });
-        JavaPairDStream<String, Double> towerFails = towerCDRs.mapValues(new Function<List<CDR>, Double>() {
-            @Override
-            public Double call(List<CDR> cdrs) throws JSONException {
-                List<CDR> filtredList = Utils.filter(cdrs, new Predicate() {
-                    @Override
-                    public boolean evaluate(Object o) {
-                        return ((CDR) o).getState() != CDR.State.FAIL;
+                    public Void call(JavaRDD<String> stringJavaRDD) throws Exception {
+                        System.out.println(Thread.currentThread().getId() + ". >>>>>>>>> 0");
+                        stringJavaRDD.foreach(new VoidFunction<String>() {
+                            @Override
+                            public void call(String s) throws Exception {
+                                System.out.println(Thread.currentThread().getId() + ". !!!!!!!!!!");
+                                getKafkaProducer().send(new ProducerRecord<>(TOWER_STATUS_STREAM, s));
+                            }
+                        });
+                        return null;
                     }
                 });
-                return  ((double) filtredList.size() / cdrs.size());
-            }
-        });
 
-        towerFails.map(new Function<Tuple2<String, Double>, JSONObject>() {
-            @Override
-            public JSONObject call(Tuple2<String, Double> tuple2) throws JSONException {
-                return new JSONObject().put("towerId", tuple2._1())
-                        .put("fails", tuple2._2());
-            }
-        }).map(new Function<JSONObject, Void>() {
-            @Override
-            public Void call(JSONObject jsonObject) throws Exception {
-                producer.send(new ProducerRecord<String, String>(TOWER_STATUS_STREAM, jsonObject.toString()));
-                return null;
-            }
-        });
-
-        towerCDRs.print();
-        towerFails.print();
+        messages.print();
+//        towerStatus.print();
 
         jssc.start();
         jssc.awaitTermination();
 
+    }
+
+    private static KafkaProducer<String, String> producer = null;
+
+    private static KafkaProducer<String, String> getKafkaProducer() {
+        if (producer == null) {
+            producer = new KafkaProducer<>(Config.getConfig().getPrefixedProps("kafka."));
+        }
+        return producer;
     }
 }

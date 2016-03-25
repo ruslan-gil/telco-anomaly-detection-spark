@@ -12,6 +12,11 @@ source.addEventListener('move', function(e) {
     onMove(JSON.parse(e.data));
 }, false);
 
+source.addEventListener('status', function(e) {
+    console.log('status');
+    console.log(JSON.parse(e.data));
+}, false);
+
 
 var FIELD = {
     input: {
@@ -25,33 +30,26 @@ var FIELD = {
 };
 
 var callers = new Map();
-
+var towers = new Map();
 
 d3.select("#universe").attr("width", FIELD.output.x)
-                       .attr("height", FIELD.output.y)
+                       .attr("height", FIELD.output.y);
+
 var svgContainer = d3.select("#universe").append("svg")
                                         .attr("width", FIELD.output.x)
                                         .attr("height", FIELD.output.y)
                                         .style("border", "1px solid black");
 function onMove(data) {
-    var new_position = {x: FIELD.output.x*data.x/FIELD.input.x, y:FIELD.output.y*data.y/FIELD.input.y}
+    data.x = FIELD.output.x*data.x/FIELD.input.x;
+    data.y = FIELD.output.y*data.y/FIELD.input.y;
     if (callers.has(data.callerId)) {
-        callers.set(data.callerId, new_position);
-//        updateDot(data.callerId, new_position);
+        callers.set(data.callerId, data);
     } else {
-        callers.set(data.callerId, new_position);
-//        addDot(data.callerId, new_position);
+        callers.set(data.callerId, data);
     }
 }
 
-function updateDot(callerId, new_position) {
-     var circles = svgContainer.select("#"+callerId)
-                                .data([new_position])
-                               .attr("cx", function (d) { return new_position.x; })
-                               .attr("cy", function (d) { return new_position.y; });
-}
-
-function addDot() {
+function addCallers() {
     svgContainer.selectAll("circle").remove();
     var circles = svgContainer.selectAll("circle")
                           .data(Array.from(callers.values()))
@@ -61,23 +59,24 @@ function addDot() {
     circles.attr("cx", function (d) {return d.x; })
         .attr("cy", function (d) { return d.y; })
         .attr("r", 4)
-//        .attr("id", callerId)
+        .attr("id", function (d) { return d.callerId; })
         .style("fill", "blue")
         .style("stroke", "black");
 }
 
-setInterval(addDot, 1000);
+setInterval(addCallers, 1000);
 
 function onInit(data) {
     var display = [];
     data.x0 /= FIELD.input.x;
     data.y0 /= FIELD.input.y;
+    towers.set(data.towerId, data);
     for (var theta = 0; theta < 2 * Math.PI; theta += 0.01) {
         var x = Math.cos(theta) + data.x0;
         var y = Math.sin(theta) + data.y0;
         var local_power = Math.pow(10, power(data, x, y) / 20);
-//        display.push({"x": local_power*x*FIELD.output.x, "y": local_power*y*FIELD.output.y});
-        display.push({"x": (data.x0 + local_power * (x - data.x0))*FIELD.output.x, "y": (data.y0 + local_power * (y - data.y0))*FIELD.output.y});
+        display.push({"x": (data.x0 + local_power * (x - data.x0))*FIELD.output.x,
+                       "y": (data.y0 + local_power * (y - data.y0))*FIELD.output.y});
     }
 
     var lineFunction = d3.svg.line()

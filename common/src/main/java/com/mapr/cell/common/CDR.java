@@ -133,6 +133,7 @@ public class CDR implements Serializable{
 
     public static CDR stringToCDR(String jsonStr) {
         CDR cdr = new CDR();
+//        System.out.println(jsonStr);
         JSONObject json = new JSONObject(jsonStr);
         Map<String, Object> jsonMap = Utils.jsonToMap(json);
         jsonMap.put("state", CDR.State.valueOf((String) jsonMap.get("state")));

@@ -11,7 +11,7 @@ public class Config {
     public static final String CONFIG_CONF = "config.conf";
     public static String INIT_TOPIC_NAME = "init";
     public static String MOVE_TOPIC_NAME = "move";
-
+    public static String TOWER_STATUS_STREAM = "tower_status";
 
     private Properties properties = new Properties();
     private String streamName;

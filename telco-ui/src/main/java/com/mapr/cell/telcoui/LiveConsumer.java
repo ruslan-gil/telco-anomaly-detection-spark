@@ -15,6 +15,7 @@ public class LiveConsumer {
         List<BaseConsumer> consumers = new ArrayList<>();
         consumers.add(new InitConsumer(Config.INIT_TOPIC_NAME));
         consumers.add(new MoveConsumer(Config.MOVE_TOPIC_NAME));
+        consumers.add(new StatusConsumer(Config.TOWER_STATUS_STREAM));
         consumers.forEach(BaseConsumer::start);
     }
 
@@ -83,6 +84,24 @@ public class LiveConsumer {
         }
     }
 
+    public class StatusConsumer extends BaseConsumer {
+
+        public StatusConsumer(String topic) {
+            super(topic);
+        }
+
+        protected void processRecords(ConsumerRecords<String, String> records) {
+            for(ConsumerRecord<String, String> record : records) {
+                try {
+                    JSONObject recordJSON = new JSONObject(record.value());
+                    onNewStatusData(recordJSON);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
     public void onNewInitData(JSONObject arg) {
         listeners.forEach((l) -> l.onNewInitData(arg));
     }
@@ -90,6 +109,9 @@ public class LiveConsumer {
 
     public void onNewMoveData(JSONObject arg) {
         listeners.forEach((l) -> l.onNewMoveData(arg));
+    }
+    public void onNewStatusData(JSONObject arg) {
+        listeners.forEach((l) -> l.onNewStatusData(arg));
     }
 
     private Set<Listener> listeners = Collections.synchronizedSet(new HashSet<>());
@@ -105,6 +127,7 @@ public class LiveConsumer {
     public interface Listener {
         void onNewInitData(JSONObject data);
         void onNewMoveData(JSONObject data);
+        void onNewStatusData(JSONObject arg);
     }
 
 }
