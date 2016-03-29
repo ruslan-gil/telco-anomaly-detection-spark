@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Universe extends UntypedActor {
     public static final int TOWER_COUNT = 20;
     public static final int USER_COUNT = 100;
+    public static final int UNIVERSE_LIVE_TIME = 60;
 
     private static final String MOVE_TOPIC = "/telco:move";
 
@@ -56,7 +57,7 @@ public class Universe extends UntypedActor {
 
         universe.tell(new Messages.Start());
 
-        for (int i = 0; i < 10000; i++) {
+        for (int i = 0; i < UNIVERSE_LIVE_TIME; i++) {
             universe.tell(new Messages.Tick());
             Thread.sleep(100);
         }

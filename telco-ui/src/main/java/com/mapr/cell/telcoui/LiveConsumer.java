@@ -15,7 +15,7 @@ public class LiveConsumer {
         List<BaseConsumer> consumers = new ArrayList<>();
         consumers.add(new InitConsumer(Config.INIT_TOPIC_NAME));
         consumers.add(new MoveConsumer(Config.MOVE_TOPIC_NAME));
-        consumers.add(new StatusConsumer(Config.TOWER_STATUS_STREAM));
+        consumers.add(new StatusConsumer(Config.FAIL_TOWER_STREAM));
         consumers.forEach(BaseConsumer::start);
     }
 

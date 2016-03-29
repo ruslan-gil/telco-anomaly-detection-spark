@@ -1,11 +1,14 @@
 package com.mapr.cell.spark;
 
+import com.google.common.collect.Iterables;
 import com.google.common.io.Resources;
 import com.mapr.cell.common.CDR;
 import com.mapr.cell.common.Config;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -27,7 +30,6 @@ import java.util.*;
 
 public class Main {
 
-    private final static String TOWER_STATUS_STREAM = "tower_status";
 
     public static void main(String[] args) {
 
@@ -46,13 +48,13 @@ public class Main {
         }
 
         // Create the context with 2 seconds batch size
-        JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, new Duration(2000));
+        JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, new Duration(1000));
 
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(Config.getConfig().getPrefixedProps("kafka."));
 
         Set<String> topics = new HashSet<>();
         for (String topic : consumer.listTopics().keySet()) {
-            if (topic.startsWith(Config.getConfig().getProperties().getProperty("kafka.streams.consumer.default.stream") + ":tower")) {
+            if (topic.startsWith(Config.getTopicPath("tower"))) {
                 topics.add(topic);
             }
         }
@@ -69,40 +71,26 @@ public class Main {
         JavaPairDStream<String, CDR> towerCDRs = cdrs.mapToPair(
                 (PairFunction<CDR, String, CDR>) cdr -> new Tuple2<>(cdr.getTowerId(), cdr));
 
-        JavaPairDStream<String, Long> towerFails = towerCDRs.
+        JavaPairDStream<String, Integer> towerFails = towerCDRs.
                 filter((Function<Tuple2<String, CDR>, Boolean>) tuple -> tuple._2().getState() == CDR.State.FAIL)
-        .countByValue()
-        .mapToPair((PairFunction<Tuple2<Tuple2<String, CDR>, Long>, String, Long>) tupleFailCounts ->
-                new Tuple2<>(tupleFailCounts._1()._1(), tupleFailCounts._2()));
+                .groupByKey()
+                .mapValues((Function<Iterable<CDR>, Integer>) Iterables::size);
 
-        JavaPairDStream<String, Long> towerCounts = towerCDRs.countByValue()
-                .mapToPair((PairFunction<Tuple2<Tuple2<String, CDR>, Long>, String, Long>) tupleFailCounts ->
-                        new Tuple2<>(tupleFailCounts._1()._1(), tupleFailCounts._2()));
+        JavaPairDStream<String, Integer> towerCounts = towerCDRs.groupByKey()
+                .mapValues((Function<Iterable<CDR>, Integer>) Iterables::size);
 
         JavaPairDStream<String, Double> towerStatus = towerFails.join(towerCounts)
-                .mapValues((Function<Tuple2<Long, Long>, Double>) tuple -> ((double) tuple._1() )/ tuple._2());
-
-//        KafkaUtils.
+                .mapValues((Function<Tuple2<Integer, Integer>, Double>) tuple -> ((double) tuple._1() )/ tuple._2());
 
         towerStatus.map((Function<Tuple2<String, Double>, String>) tuple2 ->
                 new JSONObject().put("towerId", tuple2._1()).put("fails", tuple2._2()).toString())
-                .foreach(new Function<JavaRDD<String>, Void>() {
-                    @Override
-                    public Void call(JavaRDD<String> stringJavaRDD) throws Exception {
-                        System.out.println(Thread.currentThread().getId() + ". >>>>>>>>> 0");
-                        stringJavaRDD.foreach(new VoidFunction<String>() {
-                            @Override
-                            public void call(String s) throws Exception {
-                                System.out.println(Thread.currentThread().getId() + ". !!!!!!!!!!");
-                                getKafkaProducer().send(new ProducerRecord<>(TOWER_STATUS_STREAM, s));
-                            }
-                        });
-                        return null;
-                    }
+                .foreach((Function<JavaRDD<String>, Void>) stringJavaRDD -> {
+                    stringJavaRDD.foreach((VoidFunction<String>) s ->
+                            getKafkaProducer().send(new ProducerRecord<>(Config.getTopicPath("tower"), s)));
+                    return null;
                 });
 
         messages.print();
-//        towerStatus.print();
 
         jssc.start();
         jssc.awaitTermination();
