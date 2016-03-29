@@ -52,9 +52,38 @@ function onMove(data) {
 }
 
 function onStatus(data) {
-    var ramp=d3.scale.linear().domain([0,1]).range(["green", "red"]);
+    var ramp=d3.scale.quantile().domain([0,0.1, 0.6, 0.9, 1]).range(["green","orange", "red", "black"]);
     d3.select("#tower"+data.towerId)
         .attr("fill",  ramp(data.fails/data.total));
+    if (data.fails/data.total > 0.6) {
+        addAlert(data);
+    }
+}
+
+
+function addAlert(data){
+    var fails = data.fails/data.total * 100;
+    var alert = `<div class="fragment">
+                                 <div>\
+                                     <span class='close' onclick='this.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode); return false;'>x</span>
+                                     <h2>Alert</h2>
+                                     <p class="text">
+                                         Tower(${data.towerId}) has ${fails.toFixed(2)}% fails
+                                     </p>
+                                 </div>
+                             </div>`;
+    var element = document.getElementById("alerts");
+
+    var div = document.createElement('div');
+        div.style.color = "white";
+    if (fails>90) {
+        div.style.background = "black";
+    } else {
+        div.style.background = "#BD4343";
+    }
+
+    div.innerHTML = alert;
+    element.appendChild(div);
 }
 
 function addCallers() {
