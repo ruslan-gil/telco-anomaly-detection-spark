@@ -9,6 +9,7 @@ import org.json.JSONObject;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
+import java.util.UUID;
 
 public class CDR implements Serializable{
     public enum State{
@@ -22,11 +23,14 @@ public class CDR implements Serializable{
     private State state;
     private double x;
     private double y;
+    private String sessionId;
 
     public CDR() {
+    	sessionId = UUID.randomUUID().toString().substring(0, 8);
     }
 
     public CDR(String id, double time, double x, double y) {
+    	this();
         callerId = id;
         this.x = x;
         this.y = y;
@@ -35,6 +39,7 @@ public class CDR implements Serializable{
     }
 
     public CDR(String callerId, Double callStartTime, String towerId, Double duration, State state, double x, double y) {
+    	this();
         this.callerId = callerId;
         this.callStartTime = callStartTime;
         this.towerId = towerId;
@@ -101,7 +106,15 @@ public class CDR implements Serializable{
     }
 
 
-    public void finishCDR(Double time) {
+    public String getSessionId() {
+		return sessionId;
+	}
+
+	public void setSessionId(String sessionId) {
+		this.sessionId = sessionId;
+	}
+
+	public void finishCDR(Double time) {
         this.state = State.FINISHED;
         this.duration = time - this.callStartTime;
     }
@@ -115,7 +128,8 @@ public class CDR implements Serializable{
                     .put("towerId", towerId)
                     .put("x", x)
                     .put("y", y)
-                    .put("state", state.name());
+                    .put("state", state.name())
+                    .put("sessionId", sessionId);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -156,6 +170,7 @@ public class CDR implements Serializable{
                 ", state=" + state +
                 ", x=" + x +
                 ", y=" + y +
+                ", sessionId=" + sessionId +
                 '}';
     }
 }
