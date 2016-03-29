@@ -13,6 +13,9 @@ public class Config {
     public static String MOVE_TOPIC_NAME = "move";
     public static String FAIL_TOWER_STREAM = "fail_tower";
 
+    public static final int TOWER_COUNT = 20;
+
+
     private Properties properties = new Properties();
     private static Config instance;
     private Config() {

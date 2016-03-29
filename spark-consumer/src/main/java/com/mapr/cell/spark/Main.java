@@ -79,14 +79,14 @@ public class Main {
         JavaPairDStream<String, Integer> towerCounts = towerCDRs.groupByKey()
                 .mapValues((Function<Iterable<CDR>, Integer>) Iterables::size);
 
-        JavaPairDStream<String, Double> towerStatus = towerFails.join(towerCounts)
-                .mapValues((Function<Tuple2<Integer, Integer>, Double>) tuple -> ((double) tuple._1() )/ tuple._2());
+        JavaPairDStream<String, Tuple2<Integer, Integer>> towerStatus = towerFails.join(towerCounts);
 
-        towerStatus.map((Function<Tuple2<String, Double>, String>) tuple2 ->
-                new JSONObject().put("towerId", tuple2._1()).put("fails", tuple2._2()).toString())
+        towerStatus.map((Function<Tuple2<String, Tuple2<Integer, Integer>>, String>) tuple2 ->
+                new JSONObject().put("towerId", tuple2._1()).put("fails", tuple2._2()._1())
+                .put("total", tuple2._2()._2()).toString())
                 .foreach((Function<JavaRDD<String>, Void>) stringJavaRDD -> {
                     stringJavaRDD.foreach((VoidFunction<String>) s ->
-                            getKafkaProducer().send(new ProducerRecord<>(Config.getTopicPath("tower"), s)));
+                            getKafkaProducer().send(new ProducerRecord<>(Config.getTopicPath(Config.FAIL_TOWER_STREAM), s)));
                     return null;
                 });
 

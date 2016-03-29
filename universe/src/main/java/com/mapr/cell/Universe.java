@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * A world of actors, some of whom are callers, some of whom are towers.
  */
 public class Universe extends UntypedActor {
-    public static final int TOWER_COUNT = 20;
+    public static final int TOWER_COUNT = Config.TOWER_COUNT;
     public static final int USER_COUNT = 100;
     public static final int UNIVERSE_LIVE_TIME = 60;
 

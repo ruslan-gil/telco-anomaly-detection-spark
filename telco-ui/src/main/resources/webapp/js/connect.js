@@ -15,6 +15,7 @@ source.addEventListener('move', function(e) {
 source.addEventListener('status', function(e) {
     console.log('status');
     console.log(JSON.parse(e.data));
+    onStatus(JSON.parse(e.data));
 }, false);
 
 
@@ -39,6 +40,7 @@ var svgContainer = d3.select("#universe").append("svg")
                                         .attr("width", FIELD.output.x)
                                         .attr("height", FIELD.output.y)
                                         .style("border", "1px solid black");
+
 function onMove(data) {
     data.x = FIELD.output.x*data.x/FIELD.input.x;
     data.y = FIELD.output.y*data.y/FIELD.input.y;
@@ -47,6 +49,12 @@ function onMove(data) {
     } else {
         callers.set(data.callerId, data);
     }
+}
+
+function onStatus(data) {
+    var ramp=d3.scale.linear().domain([0,1]).range(["green", "red"]);
+    d3.select("#tower"+data.towerId)
+        .attr("fill",  ramp(data.fails/data.total));
 }
 
 function addCallers() {
@@ -85,7 +93,7 @@ function onInit(data) {
                              .interpolate("basis-closed");
 
     var lineGraph = svgContainer.append("path")
-                                .attr("id", data.towerId)
+                                .attr("id", "tower" + data.towerId)
                                 .attr("d", lineFunction(display))
                                .attr("stroke", "#006600")
                                .attr("stroke-width", 2)

@@ -21,6 +21,7 @@ import java.util.Random;
  */
 public class Tower extends UntypedActor {
     private static final double MINIMUM_RECEIVE_POWER = -1000000000;
+    private static int TOWER_ID = 1;
     private final Random rand;
 
     private Antenna ax;
@@ -36,7 +37,7 @@ public class Tower extends UntypedActor {
         rand = new Random();
         ax = Antenna.omni(rand.nextDouble() * 20e3, rand.nextDouble() * 20e3);
         ax.setPower(1, 0.01);
-        id = String.format("%08x", rand.nextInt());
+        id = String.format("%d", TOWER_ID++);
     }
 
     @Override
