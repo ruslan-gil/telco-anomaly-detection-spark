@@ -12,6 +12,7 @@ public class Config {
     public static String INIT_TOPIC_NAME = "init";
     public static String MOVE_TOPIC_NAME = "move";
     public static String FAIL_TOWER_STREAM = "fail_tower";
+    private final  static  String TOWER_STREAM = "tower%s";
 
     public static final int TOWER_COUNT = 20;
 
@@ -60,4 +61,9 @@ public class Config {
     public static String getTopicPath(String topicName) {
         return Config.getConfig().getProperties().getProperty("kafka.streams.consumer.default.stream") + ":"+ topicName;
     }
+
+    public static String getTowerStream(int id) {
+        return String.format(getTopicPath(TOWER_STREAM), id);
+    }
+
 }

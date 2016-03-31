@@ -15,9 +15,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Universe extends UntypedActor {
     public static final int TOWER_COUNT = Config.TOWER_COUNT;
     public static final int USER_COUNT = 100;
-    public static final int UNIVERSE_LIVE_TIME = 60;
+    public static final int UNIVERSE_LIVE_TIME = 60*5;
 
-    private static final String MOVE_TOPIC = "/telco:move";
 
     AtomicInteger finished = new AtomicInteger(0);
     private final ActorRef users;
@@ -45,7 +44,7 @@ public class Universe extends UntypedActor {
             users.tell(message);
         } else if (message instanceof Messages.Move) {
             System.out.println("Produce message: " + mapper.writeValueAsString(message));
-            producer.send(new ProducerRecord<>(MOVE_TOPIC, mapper.writeValueAsString(message)));
+            producer.send(new ProducerRecord<>(Config.getTopicPath(Config.MOVE_TOPIC_NAME), mapper.writeValueAsString(message)));
         } else {
             unhandled(message);
         }
@@ -59,7 +58,7 @@ public class Universe extends UntypedActor {
 
         for (int i = 0; i < UNIVERSE_LIVE_TIME; i++) {
             universe.tell(new Messages.Tick());
-            Thread.sleep(100);
+            Thread.sleep(500);
         }
     }
 }

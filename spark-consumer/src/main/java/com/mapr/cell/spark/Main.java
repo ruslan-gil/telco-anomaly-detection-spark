@@ -1,16 +1,12 @@
 package com.mapr.cell.spark;
 
 import com.google.common.collect.Iterables;
-import com.google.common.io.Resources;
 import com.mapr.cell.common.CDR;
 import com.mapr.cell.common.Config;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
 import org.apache.spark.SparkConf;
-import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
@@ -24,8 +20,6 @@ import org.apache.spark.streaming.kafka.v09.KafkaUtils;
 import org.codehaus.jettison.json.JSONObject;
 import scala.Tuple2;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 
 public class Main {
@@ -33,37 +27,10 @@ public class Main {
 
     public static void main(String[] args) {
 
-        Properties properties;
+        Set<String> topics = getTopics();
+        Spark spark = new Spark(1000);
 
-        try (InputStream props = Resources.getResource("config.conf").openStream()) {
-            properties = new Properties();
-            properties.load(props);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        SparkConf sparkConf = new SparkConf();
-        for(Map.Entry<String, String> entry : Config.getConfig().getPrefixedMap("spark.").entrySet()) {
-            sparkConf.set(entry.getKey(), entry.getValue());
-        }
-
-        // Create the context with 2 seconds batch size
-        JavaStreamingContext jssc = new JavaStreamingContext(sparkConf, new Duration(1000));
-
-        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(Config.getConfig().getPrefixedProps("kafka."));
-
-        Set<String> topics = new HashSet<>();
-        for (String topic : consumer.listTopics().keySet()) {
-            if (topic.startsWith(Config.getTopicPath("tower"))) {
-                topics.add(topic);
-            }
-        }
-        System.out.println(topics);
-
-        JavaPairInputDStream<String, String> messages =
-                KafkaUtils.createDirectStream(jssc, String.class, String.class,
-                        Config.getConfig().getPrefixedMap("kafka."),
-                        topics);
+        JavaPairInputDStream<String, String> messages = spark.getInputStream(topics);
 
         JavaDStream<CDR> cdrs = messages.map((Function<Tuple2<String, String>, String>) Tuple2::_2)
                 .map((Function<String, CDR>) CDR::stringToCDR);
@@ -90,11 +57,17 @@ public class Main {
                     return null;
                 });
 
-        messages.print();
+        spark.start();
 
-        jssc.start();
-        jssc.awaitTermination();
+    }
 
+    private static Set<String> getTopics() {
+        Set<String> topics = new HashSet<>();
+        for (int i = 1; i<= Config.TOWER_COUNT; i++) {
+            topics.add(Config.getTopicPath("tower" + i));
+        }
+        System.out.println(topics);
+        return topics;
     }
 
     private static KafkaProducer<String, String> producer = null;

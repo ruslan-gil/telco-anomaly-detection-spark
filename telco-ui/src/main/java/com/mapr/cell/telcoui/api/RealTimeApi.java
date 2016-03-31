@@ -2,6 +2,7 @@ package com.mapr.cell.telcoui.api;
 
 
 
+import com.mapr.cell.common.CDR;
 import com.mapr.cell.telcoui.LiveConsumer;
 import org.eclipse.jetty.servlets.EventSource;
 import org.eclipse.jetty.servlets.EventSourceServlet;
@@ -27,6 +28,7 @@ public class RealTimeApi extends EventSourceServlet {
         private ConcurrentLinkedQueue<JSONObject> initQueue = new ConcurrentLinkedQueue<>();
         private ConcurrentLinkedQueue<JSONObject> moveQueue = new ConcurrentLinkedQueue<>();
         private ConcurrentLinkedQueue<JSONObject> statusQueue = new ConcurrentLinkedQueue<>();
+        private ConcurrentLinkedQueue<JSONObject> towerQueue = new ConcurrentLinkedQueue<>();
 
         public DataSource(LiveConsumer poller) {
             this.poller = poller;
@@ -42,6 +44,7 @@ public class RealTimeApi extends EventSourceServlet {
                 emitInit(emitter);
                 emitMove(emitter);
                 emitStatus(emitter);
+                emitTower(emitter);
             }
         }
 
@@ -75,6 +78,16 @@ public class RealTimeApi extends EventSourceServlet {
             } while (value != null);
         }
 
+        private void emitTower(Emitter emitter) throws IOException {
+            JSONObject value;
+            do {
+                value = towerQueue.poll();
+                if (value != null) {
+                    emitter.event("cdr", value.toString());
+                }
+            } while (value != null);
+        }
+
 
 
         @Override
@@ -95,6 +108,14 @@ public class RealTimeApi extends EventSourceServlet {
         @Override
         public void onNewStatusData(JSONObject data) {
             statusQueue.add(data);
+        }
+
+        @Override
+        public void onNewTowerData(JSONObject data) {
+            CDR cdr = CDR.stringToCDR(data.toString());
+            if (cdr.getState().equals(CDR.State.CONNECT) || cdr.getState().equals(CDR.State.FINISHED)) {
+                towerQueue.add(data);
+            }
         }
     }
 }

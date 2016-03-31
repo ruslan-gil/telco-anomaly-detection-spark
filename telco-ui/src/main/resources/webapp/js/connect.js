@@ -18,6 +18,13 @@ source.addEventListener('status', function(e) {
     onStatus(JSON.parse(e.data));
 }, false);
 
+source.addEventListener('cdr', function(e) {
+    console.log('cdr');
+    console.log(JSON.parse(e.data));
+    onCdr(JSON.parse(e.data));
+}, false);
+
+
 
 var FIELD = {
     input: {
@@ -31,6 +38,7 @@ var FIELD = {
 };
 
 var callers = new Map();
+//var new_callers = new Map();
 var towers = new Map();
 
 d3.select("#universe").attr("width", FIELD.output.x)
@@ -44,11 +52,11 @@ var svgContainer = d3.select("#universe").append("svg")
 function onMove(data) {
     data.x = FIELD.output.x*data.x/FIELD.input.x;
     data.y = FIELD.output.y*data.y/FIELD.input.y;
-    if (callers.has(data.callerId)) {
+//    if (callers.has(data.callerId)) {
         callers.set(data.callerId, data);
-    } else {
-        callers.set(data.callerId, data);
-    }
+//    } else {
+//        new_callers.set(data.callerId, data);
+//    }
 }
 
 function onStatus(data) {
@@ -58,6 +66,17 @@ function onStatus(data) {
     if (data.fails/data.total > 0.6) {
         addAlert(data);
     }
+}
+
+function onCdr(data) {
+   var circles = svgContainer.select(`#caller${data.callerId}`)
+                             .attr("xlink:href",function(d){
+                                 if (data.state == "FINISHED"){
+                                    return null
+                                 } else {
+                                    return "/icons/telephone.svg";
+                                 }
+                             });
 }
 
 
@@ -84,21 +103,25 @@ function addAlert(data){
 
     div.innerHTML = alert;
     element.appendChild(div);
+    setTimeout((() => element.removeChild(div)), 1000*10);
 }
 
 function addCallers() {
-    svgContainer.selectAll("circle").remove();
-    var circles = svgContainer.selectAll("circle")
-                          .data(Array.from(callers.values()))
-                          .enter()
-                          .append("circle");
+    var circles = svgContainer.selectAll("circle").data(Array.from(callers.values()));
 
     circles.attr("cx", function (d) {return d.x; })
+           .attr("cy", function (d) { return d.y; });
+
+    var new_circles = circles.enter()
+                          .append("circle");
+
+    new_circles.attr("cx", function (d) {return d.x; })
         .attr("cy", function (d) { return d.y; })
         .attr("r", 4)
-        .attr("id", function (d) { return d.callerId; })
+        .attr("id", function (d) { return `caller${d.callerId}`; })
         .style("fill", "blue")
         .style("stroke", "black");
+
 }
 
 setInterval(addCallers, 1000);

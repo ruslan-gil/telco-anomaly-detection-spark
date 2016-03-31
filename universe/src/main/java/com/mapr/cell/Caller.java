@@ -17,9 +17,9 @@ public class Caller extends UntypedActor {
 
     // how often should heartbeats be done?
     public static final int HEARTBEAT_SPREAD = 30;
-    private static final double HEARTBEAT_MIN = 30;
-    private static final double AVERAGE_CALL_LENGTH = 60;
-    private static final double CONNECT_TIMEOUT = 15;
+    private static final double HEARTBEAT_MIN = 10;
+    private static final double AVERAGE_CALL_LENGTH = 30;
+    private static final double CONNECT_TIMEOUT = 8;
 
     private ActorRef  universe;
 
@@ -107,12 +107,12 @@ public class Caller extends UntypedActor {
         }
         x += xSpeed;
         y += ySpeed;
+        universe.tell(new Messages.Move(id, x, y));
         if (cdr == null){
             return;
         }
         cdr.setX(x);
         cdr.setY(y);
-        universe.tell(new Messages.Move(id, x, y));
     }
 
     @Override
@@ -127,7 +127,7 @@ public class Caller extends UntypedActor {
             // every so often, we need to ask for a signal report
             if (time > nextHeartBeat) {
                 nextHeartBeat = time + HEARTBEAT_MIN + HEARTBEAT_SPREAD * rand.nextDouble();
-            towers.tell(new Messages.SignalReportRequest(getSelf(), x, y));
+                towers.tell(new Messages.SignalReportRequest(getSelf(), x, y));
             }
 
             // check for timeouts of any kind
