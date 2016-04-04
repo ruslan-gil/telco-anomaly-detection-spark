@@ -29,6 +29,7 @@
         <module>spark-consumer</module>
         <module>telco-ui</module>
         <module>common</module>
+        <module>maprdb-consumer</module>
     </modules>
 
 

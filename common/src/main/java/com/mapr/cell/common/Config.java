@@ -13,6 +13,7 @@ public class Config {
     public static String MOVE_TOPIC_NAME = "move";
     public static String FAIL_TOWER_STREAM = "fail_tower";
     private final  static  String TOWER_STREAM = "tower%s";
+    public static String KAFKA_GROUP_ID = "group.id";
 
     public static final int TOWER_COUNT = 20;
 
