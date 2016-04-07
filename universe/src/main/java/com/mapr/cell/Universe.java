@@ -3,9 +3,11 @@ package com.mapr.cell;
 import akka.actor.*;
 import akka.routing.BroadcastRouter;
 import com.mapr.cell.common.Config;
+import com.mapr.cell.common.Events;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.json.JSONObject;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -27,12 +29,23 @@ public class Universe extends UntypedActor {
 
     public Universe(int userCount, int towerCount) {
         producer = new KafkaProducer<>(Config.getConfig().getPrefixedProps("kafka."));
+
+        sendEventSync(Events.SIMULATION_STARTS);
+
         this.total = userCount + towerCount;
         users = this.getContext().actorOf(new Props((UntypedActorFactory) Caller::new)
                 .withRouter(new BroadcastRouter(userCount)));
         towers = this.getContext().actorOf(new Props((UntypedActorFactory) Tower::new)
                 .withRouter(new BroadcastRouter(towerCount)));
 
+    }
+
+    public void sendEventSync(Events event){
+        JSONObject object = new JSONObject();
+        object.put(event.name(), event.toString());
+        producer.send(new ProducerRecord<>(Config.getTopicPath(Config.EVENT_TOPIC_NAME),
+                object.toString()));
+        producer.flush();
     }
 
     @Override

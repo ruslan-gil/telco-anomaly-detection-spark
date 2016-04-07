@@ -16,6 +16,7 @@ public class LiveConsumer {
         consumers.add(new InitConsumer(Config.INIT_TOPIC_NAME));
         consumers.add(new MoveConsumer(Config.MOVE_TOPIC_NAME));
         consumers.add(new StatusConsumer(Config.FAIL_TOWER_STREAM));
+        consumers.add(new EventConsumer(Config.EVENT_TOPIC_NAME));
         for( int i=1 ; i<=Config.TOWER_COUNT;i++) {
             consumers.add(new TowerConsumer(Config.getTowerStream(i)));
         }
@@ -123,6 +124,25 @@ public class LiveConsumer {
         }
     }
 
+    public class EventConsumer extends BaseConsumer {
+
+        public EventConsumer(String topic) {
+            super(topic);
+        }
+
+        protected void processRecords(ConsumerRecords<String, String> records) {
+            for(ConsumerRecord<String, String> record : records) {
+                try {
+                    JSONObject recordJSON = new JSONObject(record.value());
+                    onNewEventData(recordJSON);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+
     private void onNewTowerData(JSONObject recordJSON) {
         listeners.forEach((l) -> l.onNewTowerData(recordJSON));
     }
@@ -131,6 +151,9 @@ public class LiveConsumer {
         listeners.forEach((l) -> l.onNewInitData(arg));
     }
 
+    public void onNewEventData(JSONObject arg) {
+        listeners.forEach((l) -> l.onNewEventData(arg));
+    }
 
     public void onNewMoveData(JSONObject arg) {
         listeners.forEach((l) -> l.onNewMoveData(arg));
@@ -154,6 +177,7 @@ public class LiveConsumer {
         void onNewMoveData(JSONObject data);
         void onNewStatusData(JSONObject data);
         void onNewTowerData(JSONObject data);
+        void onNewEventData(JSONObject data);
     }
 
 }

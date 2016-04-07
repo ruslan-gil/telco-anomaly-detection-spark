@@ -24,7 +24,13 @@ source.addEventListener('cdr', function(e) {
     onCdr(JSON.parse(e.data));
 }, false);
 
-
+source.addEventListener('event', function (e) {
+    console.log('event');
+    console.log(JSON.parse(e.data));
+    callers.clear();
+    towers.clear();
+    svgContainer.selectAll("*").remove();
+},false);
 
 var FIELD = {
     input: {
