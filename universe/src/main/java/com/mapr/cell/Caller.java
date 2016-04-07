@@ -113,6 +113,7 @@ public class Caller extends UntypedActor {
         }
         cdr.setX(x);
         cdr.setY(y);
+        cdr.setTime(time);
     }
 
     @Override

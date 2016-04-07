@@ -9,7 +9,7 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import java.util.Arrays;
 import java.util.Properties;
 
-class CDRConsumer extends Thread {
+class CDRConsumer implements Runnable {
     private KafkaConsumer<String, String> consumer;
     private String GROUP_ID = "cdr-consumer";
     private DAO dao;
@@ -26,7 +26,7 @@ class CDRConsumer extends Thread {
     }
 
     @Override
-    public void start() {
+    public void run() {
         long pollTimeOut = 10;
         while (true) {
             ConsumerRecords<String, String> records = consumer.poll(pollTimeOut);

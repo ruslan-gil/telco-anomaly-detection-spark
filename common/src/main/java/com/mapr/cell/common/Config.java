@@ -2,13 +2,14 @@ package com.mapr.cell.common;
 
 import com.google.common.io.Resources;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Properties;
 
 public class Config {
-    public static final String CONFIG_CONF = "config.conf";
+    public static final String CONFIG_CONF = "/tmp/config.conf";
     public static String INIT_TOPIC_NAME = "init";
     public static String MOVE_TOPIC_NAME = "move";
     public static String FAIL_TOWER_STREAM = "fail_tower";
@@ -22,7 +23,7 @@ public class Config {
     private Properties properties = new Properties();
     private static Config instance;
     private Config() {
-        try (InputStream props = Resources.getResource(CONFIG_CONF).openStream()) {
+        try (InputStream props = new FileInputStream(CONFIG_CONF)) {
             properties.load(props);
         } catch (IOException e) {
             e.printStackTrace();

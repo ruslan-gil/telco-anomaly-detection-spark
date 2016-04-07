@@ -73,7 +73,7 @@
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.10</artifactId>
-            <version>1.5.2-mapr-1602</version>
+            <version>1.5.2</version>
         </dependency>
         <dependency>
             <groupId>org.apache.spark</groupId>
@@ -85,6 +85,26 @@
             <artifactId>common</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-server</artifactId>
+            <version>1.1.1-mapr-1602</version>
+        </dependency>
+        <dependency>
+            <groupId>com.mapr.db</groupId>
+            <artifactId>maprdb</artifactId>
+            <version>5.1.0-mapr</version>
+        </dependency>
+        <dependency>
+            <groupId>com.mapr.db</groupId>
+            <artifactId>maprdb-mapreduce</artifactId>
+            <version>5.1.0-mapr</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>2.6.3</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -94,8 +114,21 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.mapr.cell.spark.Main</mainClass>
+                        </manifest>
+                    </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
                 </configuration>
             </plugin>
         </plugins>

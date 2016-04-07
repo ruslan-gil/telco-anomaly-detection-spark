@@ -23,6 +23,8 @@ public class CDR implements Serializable{
     private State state;
     private double x;
     private double y;
+    private double time;
+
     private String sessionId;
 
     public CDR() {
@@ -35,6 +37,7 @@ public class CDR implements Serializable{
         this.x = x;
         this.y = y;
         callStartTime = time;
+        this.time = time;
         state = State.CONNECT;
     }
 
@@ -42,6 +45,7 @@ public class CDR implements Serializable{
     	this();
         this.callerId = callerId;
         this.callStartTime = callStartTime;
+        this.time = time;
         this.towerId = towerId;
         this.duration = duration;
         this.state = state;
@@ -55,6 +59,14 @@ public class CDR implements Serializable{
 
     public void setX(double x) {
         this.x = x;
+    }
+
+    public double getTime() {
+        return time;
+    }
+
+    public void setTime(double time) {
+        this.time = time;
     }
 
     public double getY() {
@@ -129,6 +141,7 @@ public class CDR implements Serializable{
                     .put("x", x)
                     .put("y", y)
                     .put("state", state.name())
+                    .put("time", time)
                     .put("sessionId", sessionId);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -168,6 +181,7 @@ public class CDR implements Serializable{
                 ", towerId='" + towerId + '\'' +
                 ", duration=" + duration +
                 ", state=" + state +
+                ", time=" + time +
                 ", x=" + x +
                 ", y=" + y +
                 ", sessionId=" + sessionId +
