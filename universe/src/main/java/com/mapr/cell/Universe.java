@@ -2,12 +2,12 @@ package com.mapr.cell;
 
 import akka.actor.*;
 import akka.routing.BroadcastRouter;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mapr.cell.common.Config;
 import com.mapr.cell.common.Events;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.json.JSONObject;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -41,7 +41,7 @@ public class Universe extends UntypedActor {
     }
 
     public void sendEventSync(Events event){
-        JSONObject object = new JSONObject();
+        ObjectNode object = mapper.createObjectNode();
         object.put(event.name(), event.toString());
         producer.send(new ProducerRecord<>(Config.getTopicPath(Config.EVENT_TOPIC_NAME),
                 object.toString()));

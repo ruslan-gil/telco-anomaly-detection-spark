@@ -89,14 +89,14 @@ function onCdr(data) {
 function addAlert(data){
     var fails = data.fails/data.total * 100;
     var alert = `<div class="fragment">
-                                 <div>\
-                                     <span class='close' onclick='this.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode); return false;'>x</span>
-                                     <h2>Alert</h2>
-                                     <p class="text">
-                                         Tower(${data.towerId}) has ${fails.toFixed(2)}% fails
-                                     </p>
-                                 </div>
-                             </div>`;
+                     <div>\
+                         <span class='close' onclick='this.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode); return false;'>x</span>
+                         <h2>Alert</h2>
+                         <p class="text">
+                             Tower(${data.towerId}) has ${fails.toFixed(2)}% fails
+                         </p>
+                     </div>
+                 </div>`;
     var element = document.getElementById("alerts");
 
     var div = document.createElement('div');

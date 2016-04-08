@@ -1,6 +1,7 @@
 package com.mapr.cell;
 
-import org.json.JSONObject;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 /**
  * An antenna represents a single RF radiator with a tuned cardioid response and a limited
@@ -106,8 +107,8 @@ public class Antenna {
         return Math.hypot(x - this.x0, y - this.y0);
     }
 
-    public JSONObject toJSONObject(){
-        return new JSONObject()
+    public ObjectNode toJSONObject(){
+        return new ObjectMapper().createObjectNode()
                 .put("x0", x0)
                 .put("y0", y0)
                 .put("theta0", theta0)

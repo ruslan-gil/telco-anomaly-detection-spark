@@ -1,7 +1,6 @@
 package com.mapr.cell;
 
 import akka.actor.UntypedActor;
-import com.google.common.io.Resources;
 import com.mapr.cell.common.CDR;
 import com.mapr.cell.common.Config;
 import org.apache.kafka.clients.producer.Callback;
@@ -9,11 +8,7 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.json.JSONObject;
-import sun.text.resources.no.CollationData_no;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
 import java.util.Random;
 
 /**
