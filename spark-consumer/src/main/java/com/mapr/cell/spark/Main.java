@@ -115,18 +115,6 @@ public class Main {
             }
         });
 
-        JavaPairDStream<String, Integer> towerFailsInfo = towerInfo.filter(new Function<Tuple2<String, CDR>, Boolean>() {
-            @Override
-            public Boolean call(Tuple2<String, CDR> stringCDRTuple2) throws Exception {
-                return stringCDRTuple2._2().getState() == CDR.State.FAIL;
-            }
-        }).groupByKey()
-                .mapValues(new Function<Iterable<CDR>, Integer>() {
-                    @Override
-                    public Integer call(Iterable<CDR> cdrs) throws Exception {
-                        return Iterables.size(cdrs);
-                    }
-                });
 
         JavaPairDStream<String, Iterable<CDR>> groupedByTower = towerInfo.groupByKey();
         JavaPairDStream<String, Integer> towerAllInfo = groupedByTower

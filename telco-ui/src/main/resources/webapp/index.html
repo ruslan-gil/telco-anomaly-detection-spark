@@ -9,12 +9,82 @@
 </head>
 <body>
     <div class="container">
-       <h1>Telco</h1>
-        <div id="universe"></div>
-        <div id="alerts">
+        <h1>Telco</h1>
+        <ul class="nav nav-tabs" id="tabs">
+            <li><a href="#tab1" data-toggle="tab">Tab 1</a></li>
+            <li><a href="#tab2" data-toggle="tab">Tab 2</a></li>
+        </ul>
+        <div class="tab-content">
+            <div id="tab1" class="tab-pane">
+                <div id="universe"></div>
+                <div id="alerts"></div>
+            </div>
 
+            <div id="tab2" class="tab-pane">
+                <fieldset class="global-stat">
+                    <legend class="global-stat">Global Statistics</legend>
+                    <div class="row">
+                        <div class="col-xs-3">
+                            <div class="demo-content info">
+                                Nb of call per mn(or sec): 10023<br>
+                                Average Duration: 3:20(mn)<br>
+                                Global % of failure : 2% <br>
+                            </div>
+                        </div>
+                        <div class="col-xs-9">
+                            <div class="demo-content graphic bg-alt">
+                                <img src="trends.png">
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset class="tower-info">
+                    <legend class="tower-info">Tower Information</legend>
+                    <div class="container container-board" id="towers-info">
+                    </div>
+                </fieldset>
+                <fieldset class="session">
+                    <legend class="session">Session</legend>
+                    <div class="session-container">
+                        <div class="session-element">
+                            <table>
+                                <tr>
+                                    <td>
+                                        <span class="underline">xx-dd-333-dd</span>
+                                    </td>
+                                    <td>
+                                        Tower: <span class="underline">Tower B</span>
+                                    </td>
+                                    <td>
+                                        User Id: <span class="underline"> Tower B</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="session-element">
+                            <table>
+                                <tr>
+                                    <td>
+                                        <span class="underline">xx-dd-333-dd</span>
+                                    </td>
+                                    <td>
+                                        Tower: <span class="underline">Tower B</span>
+                                    </td>
+                                    <td>
+                                        User Id: <span class="underline"> Tower B</span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
         </div>
     </div>
     <script src="/js/connect.js"></script>
+    <script src="/js/dashboard.js"></script>
+    <script>
+        $('.nav-tabs a:first').tab('show');
+    </script>
 </body>
 </html>

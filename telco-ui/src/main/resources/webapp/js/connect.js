@@ -65,8 +65,8 @@ function onMove(data) {
 //    }
 }
 
-function onStatus(data) {
     var ramp=d3.scale.quantile().domain([0,0.1, 0.6, 0.9, 1]).range(["green","orange", "red", "black"]);
+function onStatus(data) {
     d3.select("#tower"+data.towerId)
         .attr("fill",  ramp(data.fails/data.total));
     if (data.fails/data.total > 0.6) {

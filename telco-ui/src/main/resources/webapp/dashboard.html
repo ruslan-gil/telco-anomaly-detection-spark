@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Title</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+        <link rel="stylesheet" href="/css/style.css">
+    </head>
+    <body>
+        <fieldset class="global-stat">
+            <legend class="global-stat">Global Statistics</legend>
+            <div class="row">
+                <div class="col-xs-3">
+                    <div class="demo-content info">
+                        Nb of call per mn(or sec): 10023<br>
+                        Average Duration: 3:20(mn)<br>
+                        Global % of failure : 2% <br>
+                    </div>
+                </div>
+                <div class="col-xs-9">
+                    <div class="demo-content graphic bg-alt">
+                        <img src="trends.png">
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+        <fieldset class="tower-info" >
+            <legend class="tower-info">Tower Information</legend>
+            <div id="towers-info" class="container container-board">
+                <div id="block1" class="block">
+                    <table>
+                        <tr>
+                            <td rowspan="2"><span class="underline">Tower A</span></td>
+                            <td>Status: On | Off | Unknown</td>
+                            <td>%of failure: 5%</td>
+                        </tr>
+                        <tr>
+                            <td>Active Sessions: 200</td>
+                            <td>Nb of coll per mn/s: 123</td>
+                            <td>Session Duration: 2:20</td>
+                        </tr>
+                    </table>
+                </div>
+                <div id="block2" class="block">
+                    <table>
+                        <tr>
+                            <td rowspan="2"><span class="underline">Tower B</span></td>
+                            <td>Status: On | Off | Unknown</td>
+                            <td>%of failure: 30%</td>
+                        </tr>
+                        <tr>
+                            <td>Active Sessions: 450</td>
+                            <td>Nb of coll per mn/s: 123</td>
+                            <td>Session Duration: 2:20</td>
+                        </tr>
+                    </table>
+                    </div>
+                </div>
+        </fieldset>
+        <fieldset class="session">
+            <legend class="session">Session</legend>
+            <div class="session-container">
+                <div class="session-element">
+                    <table>
+                        <tr>
+                            <td>
+                                <span class="underline">xx-dd-333-dd</span>
+                            </td>
+                            <td>
+                                Tower: <span class="underline">Tower B</span>
+                            </td>
+                            <td>
+                                User Id: <span class="underline"> Tower B</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="session-element">
+                    <table>
+                        <tr>
+                            <td>
+                                <span class="underline">xx-dd-333-dd</span>
+                            </td>
+                            <td>
+                                Tower: <span class="underline">Tower B</span>
+                            </td>
+                            <td>
+                                User Id: <span class="underline"> Tower B</span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </fieldset>
+    </body>
+</html>

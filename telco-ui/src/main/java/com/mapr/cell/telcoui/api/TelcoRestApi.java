@@ -17,8 +17,8 @@ import java.util.List;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 
-@Path("/telemetry/metrics")
-public class TelemetryRestApi {
+@Path("/telco/statistics")
+public class TelcoRestApi {
     private DAO dao = new DAO();
     private Table table;
 
