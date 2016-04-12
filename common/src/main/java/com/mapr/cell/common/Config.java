@@ -1,7 +1,5 @@
 package com.mapr.cell.common;
 
-import com.google.common.io.Resources;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;

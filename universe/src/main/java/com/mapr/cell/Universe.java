@@ -4,6 +4,7 @@ import akka.actor.*;
 import akka.routing.BroadcastRouter;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mapr.cell.common.Config;
+import com.mapr.cell.common.DAO;
 import com.mapr.cell.common.Events;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -31,6 +32,7 @@ public class Universe extends UntypedActor {
         producer = new KafkaProducer<>(Config.getConfig().getPrefixedProps("kafka."));
 
         sendEventSync(Events.SIMULATION_STARTS);
+        DAO.getInstance().newSimulation();
 
         this.total = userCount + towerCount;
         users = this.getContext().actorOf(new Props((UntypedActorFactory) Caller::new)
@@ -40,7 +42,7 @@ public class Universe extends UntypedActor {
 
     }
 
-    public void sendEventSync(Events event){
+    public void sendEventSync(Events event) {
         ObjectNode object = mapper.createObjectNode();
         object.put(event.name(), event.toString());
         producer.send(new ProducerRecord<>(Config.getTopicPath(Config.EVENT_TOPIC_NAME),

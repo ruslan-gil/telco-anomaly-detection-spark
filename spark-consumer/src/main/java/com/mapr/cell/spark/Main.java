@@ -159,7 +159,7 @@ public class Main {
                 statsRDD.foreach(new VoidFunction<Tuple2<String, Document>>() {
                     @Override
                     public void call(Tuple2<String, Document> stats) throws Exception {
-                        new DAO().sendTowerStats(stats._1(), stats._2());
+                        DAO.getInstance().sendTowerStats(stats._1(), stats._2());
                     }
                 });
                 return null;

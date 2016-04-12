@@ -19,7 +19,7 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("/telco/statistics")
 public class TelcoRestApi {
-    private DAO dao = new DAO();
+    private DAO dao = DAO.getInstance();
     private Table table;
 
 

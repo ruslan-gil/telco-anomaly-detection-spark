@@ -17,7 +17,7 @@ class CDRConsumer implements Runnable {
     CDRConsumer(int id) {
         Properties props = Config.getConfig().getPrefixedProps("kafka.");
         props.setProperty(Config.KAFKA_GROUP_ID, GROUP_ID);
-        dao = new DAO();
+        dao = DAO.getInstance();
         consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Arrays.asList(Config.getTowerStream(id)));
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {

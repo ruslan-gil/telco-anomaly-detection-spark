@@ -2,10 +2,12 @@ package com.mapr.cell.spark;
 
 
 import com.mapr.cell.common.DAO;
+import com.mapr.db.MapRDB;
 import com.mapr.db.Table;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.streaming.receiver.Receiver;
 import org.ojai.Document;
+import org.ojai.store.QueryCondition;
 
 public class MaprDBReceiver extends Receiver<String> {
     private Table table;
@@ -17,7 +19,7 @@ public class MaprDBReceiver extends Receiver<String> {
 
     @Override
     public void onStart() {
-        table = new DAO().getCdrsTable();
+        table = DAO.getInstance().getCdrsTable();
         thread = new Thread("Socket Receiver") {
             @Override
             public void run() {
@@ -30,7 +32,9 @@ public class MaprDBReceiver extends Receiver<String> {
     }
 
     private void receive() {
-        for (Document document : table.find()) {
+        long lastId = DAO.getInstance().getLastSimulationID();
+        QueryCondition c = MapRDB.newCondition().is("simulationId", QueryCondition.Op.EQUAL, lastId);
+        for (Document document : table.find(c)) {
             store(document.toString());
         }
     }
