@@ -24,6 +24,9 @@ public class CDR implements Serializable{
     private double x;
     private double y;
     private double time;
+    private double lastReconnectTime;
+    private String previousTowerId;
+
 
     private String sessionId;
 
@@ -38,6 +41,7 @@ public class CDR implements Serializable{
         this.y = y;
         callStartTime = time;
         this.time = time;
+        lastReconnectTime = time;
         state = State.CONNECT;
     }
 
@@ -45,7 +49,6 @@ public class CDR implements Serializable{
     	this();
         this.callerId = callerId;
         this.callStartTime = callStartTime;
-        this.time = time;
         this.towerId = towerId;
         this.duration = duration;
         this.state = state;
@@ -126,7 +129,23 @@ public class CDR implements Serializable{
 		this.sessionId = sessionId;
 	}
 
-	public void finishCDR(Double time) {
+    public String getPreviousTowerId() {
+        return previousTowerId;
+    }
+
+    public void setPreviousTowerId(String previousTowerId) {
+        this.previousTowerId = previousTowerId;
+    }
+
+    public double getLastReconnectTime() {
+        return lastReconnectTime;
+    }
+
+    public void setLastReconnectTime(double lastReconnectTime) {
+        this.lastReconnectTime = lastReconnectTime;
+    }
+
+    public void finishCDR(Double time) {
         this.state = State.FINISHED;
         this.duration = time - this.callStartTime;
     }
@@ -142,7 +161,9 @@ public class CDR implements Serializable{
                     .put("y", y)
                     .put("state", state.name())
                     .put("time", time)
-                    .put("sessionId", sessionId);
+                    .put("sessionId", sessionId)
+                    .put("previousConnectionDuration", time - lastReconnectTime)
+                    .put("previousTowerId", previousTowerId);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -185,6 +206,8 @@ public class CDR implements Serializable{
                 ", x=" + x +
                 ", y=" + y +
                 ", sessionId=" + sessionId +
+                ", previousConnectionDuration=" + (time - lastReconnectTime) +
+                ", previousTowerId=" + previousTowerId +
                 '}';
     }
 }

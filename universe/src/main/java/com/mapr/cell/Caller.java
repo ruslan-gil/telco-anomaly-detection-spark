@@ -168,10 +168,12 @@ public class Caller extends UntypedActor {
                     // we were rejected
                     tryNextTower();
                 } else if (message instanceof Messages.Connect) {
+                    Messages.Connect connectMessage = (Messages.Connect) message;
                     refreshCall = time + HEARTBEAT_MIN + HEARTBEAT_SPREAD * rand.nextDouble();
                     currentState = State.LIVE;
-                    currentTower = ((Messages.Connect) message).tower;
-                    currentTowerId = ((Messages.Connect) message).towerId;
+                    cdr.setLastReconnectTime(time);
+                    currentTower = connectMessage.tower;
+                    currentTowerId = connectMessage.towerId;
                     System.out.printf("Connected at %.0f with refresh at %.0f,%.0f to %s, %s\n", time, refreshCall, endCall, currentTowerId, message.getClass());
                 } else if (message instanceof Messages.Tick) {
 //                    System.out.printf("Tick at %.0f with timeout at %.0f, %s\n", time, connectTimeout, message.getClass());
@@ -198,6 +200,7 @@ public class Caller extends UntypedActor {
                     currentState = State.IDLE;
                     nextCall = time + 30 + 200 * rand.nextDouble();
                     System.out.printf("end at %.0f, next call at %.0f\n", time, nextCall);
+                    cdr = null;
                 }
                 break;
         }
@@ -224,9 +227,19 @@ public class Caller extends UntypedActor {
         Report r = live.next();
         connectTimeout = time + CONNECT_TIMEOUT;
         System.out.printf("At %.0f setting timeout to %.0f\n", time, connectTimeout);
-        cdr = new CDR(id, time, x, y);
+
+        if (cdr == null){
+            cdr = new CDR(id, time, x, y);
+        }
 
         cdr.setTowerId(r.report.towerId);
+
+        if ((currentTower != null) && (currentTower != r.report.tower)) {
+            cdr.setPreviousTowerId(currentTowerId);
+        } else {
+            cdr.setPreviousTowerId(null);
+        }
+
         r.report.tower.tell(new Messages.Hello(getSelf(), cdr.cloneCDR(), currentTower != null));
     }
 

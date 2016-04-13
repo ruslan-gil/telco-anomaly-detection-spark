@@ -51,27 +51,28 @@ public class Tower extends UntypedActor {
             Messages.Hello helloMessage = (Messages.Hello) message;
             double u = rand.nextDouble();
             if (u < 0.8) {
-                System.out.printf("Start call caller %s to tower %s\n", ((Messages.Hello) message).cdr.getCallerId(), id );
+                System.out.printf("Start call caller %s to tower %s\n", helloMessage.cdr.getCallerId(), id );
                 helloMessage.caller.tell(new Messages.Connect(id, getSelf()));
-                System.out.println("Connect CDR sent: " + ((Messages.Hello) message).cdr.toJSONObject());
-                sendToStream(((Messages.Hello) message).cdr.toJSONObject());
-                if (((Messages.Hello) message).reconnect) {
-                    ((Messages.Hello) message).cdr.setState(CDR.State.RECONNECT);
-                    System.out.println("Reconnect CDR sent: " + ((Messages.Hello) message).cdr.toJSONObject());
-                    sendToStream(((Messages.Hello) message).cdr.toJSONObject());
+                System.out.println("Connect CDR sent: " + helloMessage.cdr.toJSONObject());
+                sendToStream(helloMessage.cdr.toJSONObject());
+                if (helloMessage.reconnect) {
+                    helloMessage.cdr.setState(CDR.State.RECONNECT);
+                    System.out.println("Reconnect CDR sent: " + helloMessage.cdr.toJSONObject());
+                    sendToStream(helloMessage.cdr.toJSONObject());
                 }
             } else if (u < 0.95) {
-                System.out.printf("Failed call caller %s to tower %s\n", ((Messages.Hello) message).cdr.getCallerId(), id );
-                ((Messages.Hello) message).cdr.setState(CDR.State.FAIL);
-                sendToStream(((Messages.Hello) message).cdr.toJSONObject());
+                System.out.printf("Failed call caller %s to tower %s\n", helloMessage.cdr.getCallerId(), id );
+                helloMessage.cdr.setState(CDR.State.FAIL);
+                sendToStream(helloMessage.cdr.toJSONObject());
                 helloMessage.caller.tell(new Messages.Fail(id));
             } else {
                 // ignore request occasionally ... it will make the caller stronger
             }
         } else if (message instanceof Messages.Disconnect) {
-            System.out.printf("Finished call caller %s to tower %s\n", ((Messages.Disconnect) message).callerId, id );
-            System.out.println("Finished CDR sent: " + ((Messages.Disconnect) message).cdr.toJSONObject());
-            sendToStream(((Messages.Disconnect) message).cdr.toJSONObject());
+            Messages.Disconnect disconnectMessage = (Messages.Disconnect) message;
+            System.out.printf("Finished call caller %s to tower %s\n", disconnectMessage.callerId, id );
+            System.out.println("Finished CDR sent: " + disconnectMessage.cdr.toJSONObject());
+            sendToStream(disconnectMessage.cdr.toJSONObject());
         } else {
             unhandled(message);
         }
