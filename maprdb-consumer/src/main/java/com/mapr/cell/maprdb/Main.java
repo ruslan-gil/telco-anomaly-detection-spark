@@ -1,8 +1,6 @@
 package com.mapr.cell.maprdb;
 
 import com.mapr.cell.common.Config;
-import com.mapr.cell.common.DAO;
-import org.ojai.Document;
 
 import java.util.concurrent.ExecutorService;
 

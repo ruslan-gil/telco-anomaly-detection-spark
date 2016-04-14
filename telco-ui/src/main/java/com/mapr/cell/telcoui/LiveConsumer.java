@@ -1,12 +1,13 @@
 package com.mapr.cell.telcoui;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.mapr.cell.common.Config;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.json.JSONException;
-import org.json.JSONObject;
 
+import java.io.IOException;
 import java.util.*;
 
 public class LiveConsumer {
@@ -61,9 +62,9 @@ public class LiveConsumer {
         protected void processRecords(ConsumerRecords<String, String> records) {
             for(ConsumerRecord<String, String> record : records) {
                 try {
-                    JSONObject recordJSON = new JSONObject(record.value());
-                    onNewInitData(recordJSON);
-                } catch (JSONException e) {
+                    JsonNode node = new ObjectMapper().readTree(record.value());
+                    onNewInitData(node);
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
@@ -79,9 +80,9 @@ public class LiveConsumer {
         protected void processRecords(ConsumerRecords<String, String> records) {
             for(ConsumerRecord<String, String> record : records) {
                 try {
-                    JSONObject recordJSON = new JSONObject(record.value());
-                    onNewMoveData(recordJSON);
-                } catch (JSONException e) {
+                    JsonNode node = new ObjectMapper().readTree(record.value());
+                    onNewMoveData(node);
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
@@ -97,9 +98,9 @@ public class LiveConsumer {
         protected void processRecords(ConsumerRecords<String, String> records) {
             for(ConsumerRecord<String, String> record : records) {
                 try {
-                    JSONObject recordJSON = new JSONObject(record.value());
-                    onNewStatusData(recordJSON);
-                } catch (JSONException e) {
+                    JsonNode node = new ObjectMapper().readTree(record.value());
+                    onNewStatusData(node);
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
@@ -115,9 +116,9 @@ public class LiveConsumer {
         protected void processRecords(ConsumerRecords<String, String> records) {
             for(ConsumerRecord<String, String> record : records) {
                 try {
-                    JSONObject recordJSON = new JSONObject(record.value());
-                    onNewTowerData(recordJSON);
-                } catch (JSONException e) {
+                    JsonNode node = new ObjectMapper().readTree(record.value());
+                    onNewTowerData(node);
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
@@ -133,9 +134,9 @@ public class LiveConsumer {
         protected void processRecords(ConsumerRecords<String, String> records) {
             for(ConsumerRecord<String, String> record : records) {
                 try {
-                    JSONObject recordJSON = new JSONObject(record.value());
-                    onNewEventData(recordJSON);
-                } catch (JSONException e) {
+                    JsonNode node = new ObjectMapper().readTree(record.value());
+                    onNewEventData(node);
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
@@ -143,22 +144,22 @@ public class LiveConsumer {
     }
 
 
-    private void onNewTowerData(JSONObject recordJSON) {
+    private void onNewTowerData(JsonNode recordJSON) {
         listeners.forEach((l) -> l.onNewTowerData(recordJSON));
     }
 
-    public void onNewInitData(JSONObject arg) {
+    public void onNewInitData(JsonNode arg) {
         listeners.forEach((l) -> l.onNewInitData(arg));
     }
 
-    public void onNewEventData(JSONObject arg) {
+    public void onNewEventData(JsonNode arg) {
         listeners.forEach((l) -> l.onNewEventData(arg));
     }
 
-    public void onNewMoveData(JSONObject arg) {
+    public void onNewMoveData(JsonNode arg) {
         listeners.forEach((l) -> l.onNewMoveData(arg));
     }
-    public void onNewStatusData(JSONObject arg) {
+    public void onNewStatusData(JsonNode arg) {
         listeners.forEach((l) -> l.onNewStatusData(arg));
     }
 
@@ -173,11 +174,11 @@ public class LiveConsumer {
     }
 
     public interface Listener {
-        void onNewInitData(JSONObject data);
-        void onNewMoveData(JSONObject data);
-        void onNewStatusData(JSONObject data);
-        void onNewTowerData(JSONObject data);
-        void onNewEventData(JSONObject data);
+        void onNewInitData(JsonNode data);
+        void onNewMoveData(JsonNode data);
+        void onNewStatusData(JsonNode data);
+        void onNewTowerData(JsonNode data);
+        void onNewEventData(JsonNode data);
     }
 
 }

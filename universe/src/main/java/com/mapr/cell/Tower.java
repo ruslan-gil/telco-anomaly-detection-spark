@@ -1,13 +1,13 @@
 package com.mapr.cell;
 
 import akka.actor.UntypedActor;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mapr.cell.common.CDR;
 import com.mapr.cell.common.Config;
 import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
-import org.json.JSONObject;
 
 import java.util.Random;
 
@@ -15,7 +15,7 @@ import java.util.Random;
  * Each tower is an actor that receives messages from Callers.
  */
 public class Tower extends UntypedActor {
-    private static final double MINIMUM_RECEIVE_POWER = -100;
+    private static final double MINIMUM_RECEIVE_POWER = -100000;
     private static int TOWER_ID = 1;
     private final Random rand;
 
@@ -79,10 +79,10 @@ public class Tower extends UntypedActor {
     }
 
 
-    private void sendToStream(JSONObject jsonObject) {
+    private void sendToStream(ObjectNode objectNode) {
         producer.send(new ProducerRecord<String, String>(
                 String.format(TOPIC_NAME, id),
-                jsonObject.toString()), new Callback() {
+                objectNode.toString()), new Callback() {
             @Override
             public void onCompletion(RecordMetadata recordMetadata, Exception e) {
                 if (e != null) {

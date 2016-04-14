@@ -1,11 +1,13 @@
 package com.mapr.cell.common;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.BeanUtilsBean;
-import org.json.JSONException;
-import org.json.JSONObject;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
@@ -150,24 +152,19 @@ public class CDR implements Serializable{
         this.duration = time - this.callStartTime;
     }
 
-    public JSONObject toJSONObject(){
-        try {
-            return new JSONObject()
-                    .put("callStartTime", callStartTime)
-                    .put("callerId", callerId)
-                    .put("duration", duration)
-                    .put("towerId", towerId)
-                    .put("x", x)
-                    .put("y", y)
-                    .put("state", state.name())
-                    .put("time", time)
-                    .put("sessionId", sessionId)
-                    .put("previousConnectionDuration", time - lastReconnectTime)
-                    .put("previousTowerId", previousTowerId);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return null;
+    public ObjectNode toJSONObject(){
+        return new ObjectMapper().createObjectNode()
+                .put("callStartTime", callStartTime)
+                .put("callerId", callerId)
+                .put("duration", duration)
+                .put("towerId", towerId)
+                .put("x", x)
+                .put("y", y)
+                .put("state", state.name())
+                .put("time", time)
+                .put("sessionId", sessionId)
+                .put("previousConnectionDuration", time - lastReconnectTime)
+                .put("previousTowerId", previousTowerId);
     }
 
     public CDR cloneCDR(){
@@ -181,14 +178,13 @@ public class CDR implements Serializable{
 
     public static CDR stringToCDR(String jsonStr) {
         CDR cdr = new CDR();
-//        System.out.println(jsonStr);
-        JSONObject json = new JSONObject(jsonStr);
-        Map<String, Object> jsonMap = Utils.jsonToMap(json);
-        jsonMap.put("state", CDR.State.valueOf((String) jsonMap.get("state")));
         try {
+            Map<String, Object> jsonMap = new ObjectMapper().readValue(jsonStr, new TypeReference<Map<String, String>>(){});
+            jsonMap.put("state", State.valueOf((String) jsonMap.get("state")));
+
             BeanUtilsBean.getInstance().getConvertUtils().register(false, false, 0);
             BeanUtils.populate(cdr, jsonMap);
-        } catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (IllegalAccessException | InvocationTargetException | IOException e) {
             throw new IllegalArgumentException("Can not convert record document");
         }
         return cdr;

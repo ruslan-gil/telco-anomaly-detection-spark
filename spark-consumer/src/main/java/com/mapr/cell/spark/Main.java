@@ -21,7 +21,6 @@ import org.codehaus.jettison.json.JSONObject;
 import org.ojai.Document;
 import scala.Tuple2;
 
-import java.io.Serializable;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;

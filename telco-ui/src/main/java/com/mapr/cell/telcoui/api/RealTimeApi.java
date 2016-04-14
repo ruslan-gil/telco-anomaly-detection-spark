@@ -2,11 +2,10 @@ package com.mapr.cell.telcoui.api;
 
 
 
-import com.mapr.cell.common.CDR;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.mapr.cell.telcoui.LiveConsumer;
 import org.eclipse.jetty.servlets.EventSource;
 import org.eclipse.jetty.servlets.EventSourceServlet;
-import org.json.JSONObject;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -25,11 +24,11 @@ public class RealTimeApi extends EventSourceServlet {
     protected static class DataSource implements EventSource, LiveConsumer.Listener {
 
         private LiveConsumer poller;
-        private ConcurrentLinkedQueue<JSONObject> initQueue = new ConcurrentLinkedQueue<>();
-        private ConcurrentLinkedQueue<JSONObject> moveQueue = new ConcurrentLinkedQueue<>();
-        private ConcurrentLinkedQueue<JSONObject> statusQueue = new ConcurrentLinkedQueue<>();
-        private ConcurrentLinkedQueue<JSONObject> towerQueue = new ConcurrentLinkedQueue<>();
-        private ConcurrentLinkedQueue<JSONObject> eventQueue = new ConcurrentLinkedQueue<>();
+        private ConcurrentLinkedQueue<JsonNode> initQueue = new ConcurrentLinkedQueue<>();
+        private ConcurrentLinkedQueue<JsonNode> moveQueue = new ConcurrentLinkedQueue<>();
+        private ConcurrentLinkedQueue<JsonNode> statusQueue = new ConcurrentLinkedQueue<>();
+        private ConcurrentLinkedQueue<JsonNode> towerQueue = new ConcurrentLinkedQueue<>();
+        private ConcurrentLinkedQueue<JsonNode> eventQueue = new ConcurrentLinkedQueue<>();
 
         public DataSource(LiveConsumer poller) {
             this.poller = poller;
@@ -51,7 +50,7 @@ public class RealTimeApi extends EventSourceServlet {
         }
 
         private void emitInit(Emitter emitter) throws IOException {
-            JSONObject value;
+            JsonNode value;
             do {
                 value = initQueue.poll();
                 if (value != null) {
@@ -61,7 +60,7 @@ public class RealTimeApi extends EventSourceServlet {
         }
 
         private void emitMove(Emitter emitter) throws IOException {
-            JSONObject value;
+            JsonNode value;
             do {
                 value = moveQueue.poll();
                 if (value != null) {
@@ -71,7 +70,7 @@ public class RealTimeApi extends EventSourceServlet {
         }
 
         private void emitStatus(Emitter emitter) throws IOException {
-            JSONObject value;
+            JsonNode value;
             do {
                 value = statusQueue.poll();
                 if (value != null) {
@@ -81,7 +80,7 @@ public class RealTimeApi extends EventSourceServlet {
         }
 
         private void emitTower(Emitter emitter) throws IOException {
-            JSONObject value;
+            JsonNode value;
             do {
                 value = towerQueue.poll();
                 if (value != null) {
@@ -90,7 +89,7 @@ public class RealTimeApi extends EventSourceServlet {
             } while (value != null);
         }
         private void emitEvent(Emitter emitter) throws IOException {
-            JSONObject value;
+            JsonNode value;
             do {
                 value = eventQueue.poll();
                 if (value != null) {
@@ -105,27 +104,27 @@ public class RealTimeApi extends EventSourceServlet {
         }
 
         @Override
-        public void onNewInitData(JSONObject data) {
+        public void onNewInitData(JsonNode data) {
             initQueue.add(data);
         }
 
         @Override
-        public void onNewMoveData(JSONObject data) {
+        public void onNewMoveData(JsonNode data) {
             moveQueue.add(data);
         }
 
         @Override
-        public void onNewStatusData(JSONObject data) {
+        public void onNewStatusData(JsonNode data) {
             statusQueue.add(data);
         }
 
         @Override
-        public void onNewEventData(JSONObject data) {
+        public void onNewEventData(JsonNode data) {
             eventQueue.add(data);
         }
 
         @Override
-        public void onNewTowerData(JSONObject data) {
+        public void onNewTowerData(JsonNode data) {
             towerQueue.add(data);
         }
     }
