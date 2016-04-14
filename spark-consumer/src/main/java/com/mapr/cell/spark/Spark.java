@@ -1,16 +1,19 @@
 package com.mapr.cell.spark;
 
 
-import com.mapr.cell.common.CDR;
 import com.mapr.cell.common.Config;
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.streaming.Duration;
 import org.apache.spark.streaming.api.java.JavaPairDStream;
 import org.apache.spark.streaming.api.java.JavaPairInputDStream;
 import org.apache.spark.streaming.api.java.JavaStreamingContext;
 import org.apache.spark.streaming.kafka.v09.KafkaUtils;
-import org.ojai.Document;
+import scala.Tuple2;
 
+import java.io.Serializable;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class Spark {
@@ -38,10 +41,5 @@ public class Spark {
         jssc.awaitTermination();
     }
 
-
-    public JavaPairDStream countStats(JavaPairDStream<String, CDR> stream){
-
-        return stream;
-    }
 
 }

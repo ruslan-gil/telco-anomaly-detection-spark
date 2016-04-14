@@ -126,10 +126,7 @@ public class RealTimeApi extends EventSourceServlet {
 
         @Override
         public void onNewTowerData(JSONObject data) {
-            CDR cdr = CDR.stringToCDR(data.toString());
-            if (cdr.getState().equals(CDR.State.CONNECT) || cdr.getState().equals(CDR.State.FINISHED)) {
-                towerQueue.add(data);
-            }
+            towerQueue.add(data);
         }
     }
 }

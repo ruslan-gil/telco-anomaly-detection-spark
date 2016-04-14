@@ -70,25 +70,48 @@ public class DAO {
                 setOrReplace("time", new Date().getTime()).
                 increment("simulationId", 1);
         simulationTable.update(SIMULATION_KEY, mutation);
+        addInitialStats();
+    }
+
+    private void addInitialStats() {
+        long lastSimulationID = getLastSimulationID();
+        for(int i=1; i<=Config.TOWER_COUNT; i++) {
+
+            Document towerDoc = MapRDB.newDocument().
+                    set("_id", lastSimulationID+"/tower"+i).
+                    set("towerId", i).
+                    set("towerAllInfo", 0).
+                    set("towerFails", 0).
+                    set("towerDurations", 0).
+                    set("sessions", 0).
+                    set("time", 1).
+                    set("simulationId", lastSimulationID);
+            statsTable.insert(towerDoc);
+        }
+        statsTable.flush();
     }
 
     public long getLastSimulationID() {
-        return simulationTable.findById(SIMULATION_KEY).getInt("simulationId");
+        try{
+            return simulationTable.findById(SIMULATION_KEY).getInt("simulationId");
+        } catch(NullPointerException e) {
+            return -1;
+        }
     }
 
     public void addCDR(String cdrJson) {
         Document document = MapRDB.newDocument(cdrJson);
-        document.set("emulationId", getLastSimulationID());
+        document.set("simulationId", getLastSimulationID());
         System.out.println(document);
         //TODO: add zeros to constant length (for dzhuribeda)
-        cdrsTable.insert("00000"+document.getDouble("time") +"/"+ document.getString("callerId")+"/"
-                + document.getString("towerId"), document);
+        cdrsTable.insert("0000"+document.getLong("simulationId")+"/00000"+document.getDouble("time") +"/"+ document.getString("callerId")+"/"
+                + document.getString("towerId") +"/"+document.getString("state"), document);
         System.out.println("inserted " + document.toString());
         cdrsTable.flush();
     }
 
-    public void sendTowerStats(String tower, Document stats) {
-        statsTable.insertOrReplace(tower, stats);
+    public void sendTowerStats(Document stats) {
+        statsTable.insertOrReplace(stats);
         statsTable.flush();
     }
 

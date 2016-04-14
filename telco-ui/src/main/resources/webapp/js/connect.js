@@ -7,20 +7,20 @@ source.addEventListener('init', function(e) {
 }, false);
 
 source.addEventListener('move', function(e) {
-    console.log('move');
-    console.log(JSON.parse(e.data));
+//    console.log('move');
+//    console.log(JSON.parse(e.data));
     onMove(JSON.parse(e.data));
 }, false);
 
 source.addEventListener('status', function(e) {
-    console.log('status');
-    console.log(JSON.parse(e.data));
+//    console.log('status');
+//    console.log(JSON.parse(e.data));
     onStatus(JSON.parse(e.data));
 }, false);
 
 source.addEventListener('cdr', function(e) {
-    console.log('cdr');
-    console.log(JSON.parse(e.data));
+//    console.log('cdr');
+//    console.log(JSON.parse(e.data));
     onCdr(JSON.parse(e.data));
 }, false);
 
@@ -29,6 +29,7 @@ source.addEventListener('event', function (e) {
     console.log(JSON.parse(e.data));
     callers.clear();
     towers.clear();
+    calls.clear();
     svgContainer.selectAll("*").remove();
 },false);
 
@@ -44,8 +45,8 @@ var FIELD = {
 };
 
 var callers = new Map();
-//var new_callers = new Map();
 var towers = new Map();
+var calls = new Map();
 
 d3.select("#universe").attr("width", FIELD.output.x)
                        .attr("height", FIELD.output.y);
@@ -55,17 +56,16 @@ var svgContainer = d3.select("#universe").append("svg")
                                         .attr("height", FIELD.output.y)
                                         .style("border", "1px solid black");
 
+var ramp=d3.scale.quantile().domain([0,0.1, 0.6, 0.9, 1]).range(["green","orange", "red", "black"]);
+var x=d3.scale.linear().domain([0, FIELD.input.x]).range([0, FIELD.output.x]);
+var y=d3.scale.linear().domain([0, FIELD.input.y]).range([0, FIELD.output.y]);
+
 function onMove(data) {
-    data.x = FIELD.output.x*data.x/FIELD.input.x;
-    data.y = FIELD.output.y*data.y/FIELD.input.y;
-//    if (callers.has(data.callerId)) {
-        callers.set(data.callerId, data);
-//    } else {
-//        new_callers.set(data.callerId, data);
-//    }
+    data.x = x(data.x);
+    data.y = y(data.y);
+    callers.set(data.callerId, data);
 }
 
-    var ramp=d3.scale.quantile().domain([0,0.1, 0.6, 0.9, 1]).range(["green","orange", "red", "black"]);
 function onStatus(data) {
     d3.select("#tower"+data.towerId)
         .attr("fill",  ramp(data.fails/data.total));
@@ -74,17 +74,37 @@ function onStatus(data) {
     }
 }
 
-function onCdr(data) {
-   var circles = svgContainer.select(`#caller${data.callerId}`)
-                             .attr("xlink:href",function(d){
-                                 if (data.state == "FINISHED"){
-                                    return null
-                                 } else {
-                                    return "/icons/telephone.svg";
-                                 }
-                             });
+function onCdr(d) {
+   if (d.state == "FINISHED") {
+        calls.delete(d.callerId);
+   } else {
+        var tower = towers.get(d.towerId);
+        var connection = [{
+            x: x(d.x),
+            y: y(d.y)
+        },{
+            x: tower.x0,
+            y: tower.y0
+        }];
+        calls.set(d.callerId, connection);
+   }
 }
 
+function addCalls() {
+
+    var line = d3.svg.line()
+        .x(function (d) { return d.x; })
+        .y(function (d) { return d.y; });
+
+    var  data = Array.from(calls.values());
+
+    for (var i=0; i < data.length; i++) {
+        svgContainer.append("path")
+          .attr("class", "call")
+          .datum(data[i])
+          .attr("d", line);
+    }
+}
 
 function addAlert(data){
     var fails = data.fails/data.total * 100;
@@ -130,19 +150,20 @@ function addCallers() {
 
 }
 
-setInterval(addCallers, 1000);
 
 function onInit(data) {
     var display = [];
-    data.x0 /= FIELD.input.x;
-    data.y0 /= FIELD.input.y;
+    var x=d3.scale.linear().domain([0, FIELD.input.x]).range([0, FIELD.output.x]);
+    var y=d3.scale.linear().domain([0, FIELD.input.y]).range([0, FIELD.output.y]);
+    data.x0 = x(data.x0);
+    data.y0 = y(data.y0);
     towers.set(data.towerId, data);
     for (var theta = 0; theta < 2 * Math.PI; theta += 0.01) {
         var x = Math.cos(theta) + data.x0;
         var y = Math.sin(theta) + data.y0;
         var local_power = Math.pow(10, power(data, x, y) / 20);
-        display.push({"x": (data.x0 + local_power * (x - data.x0))*FIELD.output.x,
-                       "y": (data.y0 + local_power * (y - data.y0))*FIELD.output.y});
+        display.push({"x": (data.x0 + local_power * (x - data.x0)),
+                       "y": (data.y0 + local_power * (y - data.y0))});
     }
 
     var lineFunction = d3.svg.line()
@@ -158,6 +179,12 @@ function onInit(data) {
                                .style("opacity", 0.5)
                                 .attr("fill", "green");
 }
+
+setInterval(function(){
+    addCallers();
+    addCalls();
+}, 1000);
+
 
 
 function power(data, x, y) {

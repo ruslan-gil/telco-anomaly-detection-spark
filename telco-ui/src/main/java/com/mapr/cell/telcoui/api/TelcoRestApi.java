@@ -3,9 +3,11 @@ package com.mapr.cell.telcoui.api;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mapr.cell.common.DAO;
+import com.mapr.db.MapRDB;
 import com.mapr.db.Table;
 import org.ojai.Document;
 import org.ojai.DocumentStream;
+import org.ojai.store.QueryCondition;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -29,7 +31,8 @@ public class TelcoRestApi {
 
         List<Document> items = new ArrayList<>();
         table = dao.getStatsTable();
-        DocumentStream rs = table.find();
+        QueryCondition c = MapRDB.newCondition().is("simulationId", QueryCondition.Op.EQUAL, dao.getLastSimulationID());
+        DocumentStream rs = table.find(c);
         ObjectMapper object = new ObjectMapper();
 
         if (rs != null) {

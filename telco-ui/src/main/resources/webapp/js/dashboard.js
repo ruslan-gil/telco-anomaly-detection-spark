@@ -30,14 +30,14 @@ function visualizeStatistics() {
         var lastInfo = curStats[curStats.length-1];
         var info = `<table>
                          <tr>
-                             <td rowspan="2">Tower ${el}</td>
+                             <td rowspan="2">Tower ${lastInfo.towerId}</td>
                              <td>Status: On | Off | Unknown</td>
-                             <td>%of failure: ${(lastInfo.towerFails/lastInfo.towerAllInfo).toFixed(2)}%</td>
+                             <td>%of failure: ${(lastInfo.towerFails/lastInfo.towerAllInfo).toFixed(2)*100 || 0}%</td>
                          </tr>
                          <tr>
-                             <td>Active Sessions: ${lastInfo.towerAllInfo}</td>
-                             <td>Nb of coll per mn/s: ${lastInfo.towerAllInfo}</td>
-                             <td>Session Duration: ${(lastInfo.towerDurations/lastInfo.towerAllInfo).toFixed(2)}</td>
+                             <td>Active Sessions: 0</td>
+                             <td>Nb of coll per mn/s: ${lastInfo.sessions/lastInfo.time || 0}</td>
+                             <td>Session Duration: ${(lastInfo.towerDurations/lastInfo.sessions).toFixed(2) || 0}</td>
                          </tr>
                      </table>`;
         if (document.getElementById(`tower-info${el}`) == undefined) {

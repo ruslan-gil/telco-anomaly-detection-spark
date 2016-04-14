@@ -88,16 +88,11 @@ fieldset.session {
     border:2px solid rgba(68, 68, 68, 0.75);
     width:100%;
     height: 35%;
-    min-height: 120px;
+    min-height: 90px;
     margin-top: 1%;
     padding: 10px;
 }
-#block1 {
-    background-color: rgba(0, 124, 0, 0.67);
-}
-#block2 {
-    background-color: rgb(186, 184, 6);
-}
+
 .session-element {
     border: 2px solid rgba(68, 68, 68, 0.75);
     width: 100%;
@@ -111,4 +106,7 @@ td {
 span.underline {
     text-decoration: underline;
     color: #2b79ff;
+}
+path.call {
+  stroke: #FFA319;
 }

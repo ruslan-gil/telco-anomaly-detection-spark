@@ -5,9 +5,6 @@ import com.mapr.cell.common.CDR;
 import com.mapr.cell.common.Config;
 import com.mapr.cell.common.DAO;
 import com.mapr.db.MapRDB;
-import com.mapr.db.mapreduce.TableInputFormat;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -16,13 +13,18 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.streaming.api.java.*;
-import org.apache.spark.streaming.dstream.InputDStream;
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.JsonParser;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jettison.json.JSONObject;
 import org.ojai.Document;
-import org.ojai.Value;
 import scala.Tuple2;
 
+import java.io.Serializable;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 public class Main {
@@ -98,10 +100,10 @@ public class Main {
                         return null;
                     }
                 });
-        messages.print();
 
-        JavaReceiverInputDStream<String> dbRecords = spark.jssc.receiverStream(new MaprDBReceiver());
-        JavaDStream<CDR> dbCdrs = dbRecords.map(new Function<String, CDR>() {
+
+        JavaReceiverInputDStream<String> cdrsDbRecords = spark.jssc.receiverStream(new MaprDBReceiver.CDRReceiver());
+        JavaDStream<CDR> dbCdrs = cdrsDbRecords.map(new Function<String, CDR>() {
             @Override
             public CDR call(String s) throws Exception {
                 return CDR.stringToCDR(s);
@@ -117,67 +119,189 @@ public class Main {
 
 
         JavaPairDStream<String, Iterable<CDR>> groupedByTower = towerInfo.groupByKey();
-        JavaPairDStream<String, Integer> towerAllInfo = groupedByTower
-                .mapValues(new Function<Iterable<CDR>, Integer>() {
+        JavaPairDStream<String, Double> towerAllInfo = groupedByTower
+                .mapValues(new Function<Iterable<CDR>, Double>() {
                     @Override
-                    public Integer call(Iterable<CDR> cdrs) throws Exception {
-                        return Iterables.size(cdrs);
+                    public Double call(Iterable<CDR> cdrs) throws Exception {
+                        return (double) Iterables.size(cdrs);
                     }
                 });
-        JavaPairDStream<String, Double> towerDurations = groupedByTower.mapValues(new Function<Iterable<CDR>, Double>() {
+        JavaPairDStream<String, Double> towerTime = groupedByTower
+                .mapValues(new Function<Iterable<CDR>, Double>() {
+                    @Override
+                    public Double call(Iterable<CDR> cdrs) throws Exception {
+                        double max = Double.MIN_VALUE;
+                        for(CDR cdr : cdrs) {
+                            max = max<cdr.getTime() ? cdr.getTime() : max;
+                        }
+                        return max;
+                    };
+                });
+
+
+        JavaPairDStream<String, Double> towerFailsGlobal = towerInfo.
+                filter(new Function<Tuple2<String, CDR>, Boolean>() {
+                    @Override
+                    public Boolean call(Tuple2<String, CDR> tuple) throws Exception {
+                        return tuple._2().getState() == CDR.State.FAIL;
+                    }
+                })
+                .groupByKey()
+                .mapValues(new Function<Iterable<CDR>, Double>() {
+                    @Override
+                    public Double call(Iterable<CDR> cdrs) throws Exception {
+                        return (double) Iterables.size(cdrs);
+                    }
+                });
+
+        JavaPairDStream<Tuple2<String, String>, Iterable<CDR>> groupedBySession = dbCdrs.mapToPair(new PairFunction<CDR, Tuple2<String, String>, CDR>() {
+            @Override
+            public Tuple2<Tuple2<String, String>, CDR> call(CDR cdr) throws Exception {
+                return new Tuple2<>(new Tuple2<>(cdr.getTowerId(), cdr.getSessionId()), cdr);
+            }
+        }).groupByKey();
+
+        JavaPairDStream<String, Double> sessionCountByTower = groupedBySession.mapValues(new Function<Iterable<CDR>, Double>() {
+            @Override
+            public Double call(Iterable<CDR> cdrs) throws Exception {
+                return 1.;
+            }
+        }).mapToPair(new PairFunction<Tuple2<Tuple2<String,String>,Double>, String, Double>() {
+            @Override
+            public Tuple2<String, Double> call(Tuple2<Tuple2<String, String>, Double> tuple) throws Exception {
+                return new Tuple2<>(tuple._1()._1(), tuple._2());
+            }
+        }).groupByKey().mapValues(new Function<Iterable<Double>, Double>() {
+            @Override
+            public Double call(Iterable<Double> sessions) throws Exception {
+                return  (double) Iterables.size(sessions);
+            }
+        });
+
+
+
+        JavaPairDStream<String, Iterable<CDR>> groupedByPreviousTower = dbCdrs.mapToPair(new PairFunction<CDR, String, CDR>() {
+            @Override
+            public Tuple2<String, CDR> call(CDR cdr) throws Exception {
+                Tuple2<String, CDR> pair;
+                if (cdr.getPreviousTowerId() != null) {
+                    pair = new Tuple2<>(cdr.getPreviousTowerId(), cdr);
+                } else {
+                    pair = new Tuple2<>(cdr.getTowerId(), cdr);
+                }
+                return pair;
+            }
+        }).groupByKey();
+
+        JavaPairDStream<String, Double> towerDurations = groupedByPreviousTower.
+                mapValues(new Function<Iterable<CDR>, Double>() {
             @Override
             public Double call(Iterable<CDR> cdrs) throws Exception {
                 double duration = 0;
                 for (CDR cdr : cdrs) {
-                    if (cdr.getState() == CDR.State.FINISHED) {
-                        duration += cdr.getDuration();
+                    if (cdr.getState() == CDR.State.FINISHED || cdr.getState() == CDR.State.RECONNECT) {
+                        duration += cdr.getTime() - cdr.getLastReconnectTime();
                     }
                 }
                 return duration;
             }
         });
 
-        JavaPairDStream<String, Document> documentsPartial1 = towerAllInfo.join(towerFails).mapValues(new Function<Tuple2<Integer, Integer>, Document>() {
+        JavaReceiverInputDStream<String> statsDbRecords = spark.jssc.receiverStream(new MaprDBReceiver.StatsReceiver());
+
+        JavaDStream<Map> dbStats= statsDbRecords.map(new Function<String, Map>() {
             @Override
-            public Document call(Tuple2<Integer, Integer> values) throws Exception {
-                return MapRDB.newDocument().
-                        set("towerAllInfo", values._1()).
-                        set("towerFails", values._2());
+            public Map call(String s) throws Exception {
+                System.out.println(s);
+                ObjectMapper mapper = new ObjectMapper();
+                JsonFactory factory = mapper.getJsonFactory(); // since 2.1 use mapper.getFactory() instead
+                JsonParser jp = factory.createJsonParser(s);
+                JsonNode actualObj = mapper.readTree(jp);
+                return mapper.convertValue(actualObj, Map.class);
             }
         });
 
-        JavaPairDStream<String, Document> documentsPartial2 = documentsPartial1.join(towerDurations).mapValues(new Function<Tuple2<Document, Double>, Document>() {
+        JavaPairDStream<String, Map> towerStat = dbStats.mapToPair(new PairFunction<Map, String, Map>() {
             @Override
-            public Document call(Tuple2<Document, Double> values) throws Exception {
-                return values._1().set("towerDurations", values._2());
+            public Tuple2<String, Map> call(Map stat) throws Exception {
+                return new Tuple2<>(stat.get("towerId").toString(), stat);
             }
         });
 
-        documentsPartial2.foreachRDD(new Function<JavaPairRDD<String, Document>, Void>() {
+//        JavaPairDStream<String, Document> resultStat = new JavaPairStreamJoiner(towerStat).
+//                addStats(towerAllInfo, "towerAllInfo").
+//                addStats(towerFailsGlobal, "towerFails").
+//                addStats(towerDurations, "towerDuration").
+//                build().
+//        mapValues(new Function<Map, Document>() {
+//            @Override
+//            public Document call(Map jsonNodes) throws Exception {
+//                return MapRDB.newDocument(jsonNodes);
+//            }
+//        });
+
+        JavaPairDStream<String, Document> resultStat = towerStat.join(towerAllInfo).mapValues(new Function<Tuple2<Map,Double>, Map>() {
+            @Override
+            public Map call(Tuple2<Map, Double> values) throws Exception {
+                Map tmp = new LinkedHashMap(values._1());
+                tmp.put("towerAllInfo", values._2());
+                return tmp;
+            }
+        })
+                .join(towerFailsGlobal).mapValues(new Function<Tuple2<Map,Double>, Map>() {
+                    @Override
+                    public Map call(Tuple2<Map, Double> values) throws Exception {
+                        Map tmp = new LinkedHashMap(values._1());
+                        tmp.put("towerFails", values._2());
+                        return tmp;
+                    }
+                })
+        .join(towerDurations).mapValues(new Function<Tuple2<Map,Double>, Map>() {
+            @Override
+            public Map call(Tuple2<Map, Double> values) throws Exception {
+                Map tmp = new LinkedHashMap(values._1());
+                tmp.put("towerDurations", values._2());
+                return tmp;
+            }
+        }).join(sessionCountByTower).mapValues(new Function<Tuple2<Map,Double>, Map>() {
+            @Override
+            public Map call(Tuple2<Map, Double> values) throws Exception {
+                Map tmp = new LinkedHashMap(values._1());
+                tmp.put("sessions", values._2());
+                return tmp;
+            }
+        }).join(towerTime).mapValues(new Function<Tuple2<Map,Double>, Map>() {
+            @Override
+            public Map call(Tuple2<Map, Double> values) throws Exception {
+                Map tmp = new LinkedHashMap(values._1());
+                tmp.put("time", values._2());
+                return tmp;
+            }
+        }).
+
+
+
+        mapValues(new Function<Map, Document>() {
+            @Override
+            public Document call(Map jsonNodes) throws Exception {
+                return MapRDB.newDocument(jsonNodes);
+            }
+        });
+
+
+
+        resultStat.foreachRDD(new Function<JavaPairRDD<String, Document>, Void>() {
             @Override
             public Void call(JavaPairRDD<String, Document> statsRDD) throws Exception {
                 statsRDD.foreach(new VoidFunction<Tuple2<String, Document>>() {
                     @Override
                     public void call(Tuple2<String, Document> stats) throws Exception {
-                        DAO.getInstance().sendTowerStats(stats._1(), stats._2());
+                        DAO.getInstance().sendTowerStats(stats._2());
                     }
                 });
                 return null;
             }
         });
-
-
-//        towerAllInfo.join(towerFailsInfo).join();
-
-
-//        JavaDStream<Long> failsAmount = dbCdrs.filter(new Function<CDR, Boolean>() {
-//            @Override
-//            public Boolean call(CDR cdr) throws Exception {
-//                return cdr.getState() == CDR.State.FAIL;
-//            }
-//        }).count();
-
-        dbRecords.print();
 
         spark.start();
     }
@@ -198,5 +322,40 @@ public class Main {
             producer = new KafkaProducer<>(Config.getConfig().getPrefixedProps("kafka."));
         }
         return producer;
+    }
+
+    private static class JavaPairStreamJoiner {
+
+        JavaPairDStream<String, Map> innerStream;
+
+        public JavaPairStreamJoiner(JavaPairDStream<String, Map> stream) {
+            innerStream = stream;
+        }
+
+        public JavaPairStreamJoiner addStats(JavaPairDStream<String, Double> stream, final String paramName) {
+            innerStream = chain(innerStream, stream, paramName);
+            return this;
+        }
+
+        private static JavaPairDStream<String, Map> chain(JavaPairDStream<String, Map> innerStream,
+                                                             JavaPairDStream<String, Double> stream,
+                                                             final String paramName) {
+            innerStream = innerStream.join(stream).mapValues(new Function<Tuple2<Map,Double>, Map>() {
+                @Override
+                public Map call(Tuple2<Map, Double> values) throws Exception {
+                    Map tmp = new LinkedHashMap(values._1());
+                    tmp.put(paramName, values._2());
+                    return tmp;
+                }
+            });
+            return innerStream;
+        }
+
+        public JavaPairDStream<String, Map> build() {
+            JavaPairDStream<String, Map> innerStream2 = innerStream;
+            innerStream = null;
+            return innerStream2;
+        }
+
     }
 }

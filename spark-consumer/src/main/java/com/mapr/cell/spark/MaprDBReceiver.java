@@ -9,7 +9,7 @@ import org.apache.spark.streaming.receiver.Receiver;
 import org.ojai.Document;
 import org.ojai.store.QueryCondition;
 
-public class MaprDBReceiver extends Receiver<String> {
+public abstract class MaprDBReceiver extends Receiver<String> {
     private Table table;
     private Thread thread;
 
@@ -19,12 +19,17 @@ public class MaprDBReceiver extends Receiver<String> {
 
     @Override
     public void onStart() {
-        table = DAO.getInstance().getCdrsTable();
+        table = getTable();
         thread = new Thread("Socket Receiver") {
             @Override
             public void run() {
                 while (!this.isInterrupted()) {
                     receive();
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         };
@@ -42,5 +47,23 @@ public class MaprDBReceiver extends Receiver<String> {
     @Override
     public void onStop() {
         thread.interrupt();
+    }
+
+    protected abstract Table getTable();
+
+    public static class CDRReceiver extends MaprDBReceiver {
+
+        @Override
+        protected Table getTable() {
+            return DAO.getInstance().getCdrsTable();
+        }
+    }
+
+    public static class StatsReceiver extends MaprDBReceiver {
+
+        @Override
+        protected Table getTable() {
+            return DAO.getInstance().getStatsTable();
+        }
     }
 }
