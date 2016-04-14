@@ -26,9 +26,9 @@
                     <div class="row">
                         <div class="col-xs-3">
                             <div class="demo-content info">
-                                Nb of call per mn(or sec): 10023<br>
-                                Average Duration: 3:20(mn)<br>
-                                Global % of failure : 2% <br>
+                                Nb of call per mn(or sec): <span id="avg_calls">0</span><br>
+                                Average Duration: <span id="avg_duration">0</span>(s)<br>
+                                Global % of failure : <span id="failures">0</span>% <br>
                             </div>
                         </div>
                         <div class="col-xs-9">
@@ -45,37 +45,8 @@
                 </fieldset>
                 <fieldset class="session">
                     <legend class="session">Session</legend>
-                    <div class="session-container">
-                        <div class="session-element">
-                            <table>
-                                <tr>
-                                    <td>
-                                        <span class="underline">xx-dd-333-dd</span>
-                                    </td>
-                                    <td>
-                                        Tower: <span class="underline">Tower B</span>
-                                    </td>
-                                    <td>
-                                        User Id: <span class="underline"> Tower B</span>
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
-                        <div class="session-element">
-                            <table>
-                                <tr>
-                                    <td>
-                                        <span class="underline">xx-dd-333-dd</span>
-                                    </td>
-                                    <td>
-                                        Tower: <span class="underline">Tower B</span>
-                                    </td>
-                                    <td>
-                                        User Id: <span class="underline"> Tower B</span>
-                                    </td>
-                                </tr>
-                            </table>
-                        </div>
+                    <div class="session-container" id="sessions">
+
                     </div>
                 </fieldset>
             </div>

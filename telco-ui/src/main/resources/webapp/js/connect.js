@@ -28,8 +28,15 @@ source.addEventListener('event', function (e) {
     console.log('event');
     console.log(JSON.parse(e.data));
     callers.clear();
+    for( var [el, cur] of towers.entries()) {
+        document.getElementById(`tower-info${cur.towerId}`).remove();
+    }
     towers.clear();
     calls.clear();
+    for( var [el, cur] of sessions.entries()) {
+        document.getElementById(`session-info${cur.sessionId}`).remove();
+    }
+    sessions.clear();
     svgContainer.selectAll("*").remove();
 },false);
 
@@ -47,6 +54,7 @@ var FIELD = {
 var callers = new Map();
 var towers = new Map();
 var calls = new Map();
+var sessions = new Map();
 
 d3.select("#universe").attr("width", FIELD.output.x)
                        .attr("height", FIELD.output.y);
@@ -77,16 +85,24 @@ function onStatus(data) {
 function onCdr(d) {
    if (d.state == "FINISHED") {
         calls.delete(d.callerId);
+        sessions.delete(d.callerId);
+        document.getElementById(`session-info${d.sessionId}`).remove();
    } else {
         var tower = towers.get(d.towerId);
         var connection = [{
             x: x(d.x),
             y: y(d.y)
         },{
-            x: tower.x0,
-            y: tower.y0
+            x: tower.x0*FIELD.output.x,
+            y: tower.y0*FIELD.output.y
         }];
         calls.set(d.callerId, connection);
+        var session = {
+                    sessionId: d.sessionId,
+                    towerId: d.towerId,
+                    callerId: d.callerId
+                };
+        sessions.set(d.callerId, session);
    }
 }
 
@@ -153,17 +169,15 @@ function addCallers() {
 
 function onInit(data) {
     var display = [];
-    var x=d3.scale.linear().domain([0, FIELD.input.x]).range([0, FIELD.output.x]);
-    var y=d3.scale.linear().domain([0, FIELD.input.y]).range([0, FIELD.output.y]);
-    data.x0 = x(data.x0);
-    data.y0 = y(data.y0);
+    data.x0 = data.x0/FIELD.input.x;
+    data.y0 = data.y0/FIELD.input.y;
     towers.set(data.towerId, data);
     for (var theta = 0; theta < 2 * Math.PI; theta += 0.01) {
         var x = Math.cos(theta) + data.x0;
         var y = Math.sin(theta) + data.y0;
         var local_power = Math.pow(10, power(data, x, y) / 20);
-        display.push({"x": (data.x0 + local_power * (x - data.x0)),
-                       "y": (data.y0 + local_power * (y - data.y0))});
+        display.push({"x": (data.x0 + local_power * (x - data.x0))*FIELD.output.x,
+                       "y": (data.y0 + local_power * (y - data.y0))*FIELD.output.y});
     }
 
     var lineFunction = d3.svg.line()
