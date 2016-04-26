@@ -166,20 +166,21 @@ function addCallers() {
 
 }
 
-
+var P_MIN = -50;
 function onInit(data) {
     var display = [];
-    data.x0 = data.x0/FIELD.input.x;
-    data.y0 = data.y0/FIELD.input.y;
     towers.set(data.towerId, data);
     for (var theta = 0; theta < 2 * Math.PI; theta += 0.01) {
-        var x = Math.cos(theta) + data.x0;
-        var y = Math.sin(theta) + data.y0;
-        var local_power = Math.pow(10, power(data, x, y) / 20);
-        display.push({"x": (data.x0 + local_power * (x - data.x0))*FIELD.output.x,
-                       "y": (data.y0 + local_power * (y - data.y0))*FIELD.output.y});
+        var x = Math.cos(theta);
+        var y = Math.sin(theta);
+        var r = Math.sqrt(Math.pow(10, power(data, x, y) / 20) / Math.pow(10, P_MIN / 20));
+        display.push({"x": (data.x0 + r * x)*FIELD.output.x/FIELD.input.x,
+
+                       "y": (data.y0 + r * y)*FIELD.output.y/FIELD.input.y});
     }
 
+    data.x0 = data.x0/FIELD.input.x;
+    data.y0 = data.y0/FIELD.input.y;
     var lineFunction = d3.svg.line()
                               .x(function(d) { return d.x; })
                               .y(function(d) { return d.y; })
@@ -202,11 +203,11 @@ setInterval(function(){
 
 
 function power(data, x, y) {
-    var rSquared = (x - data.x0) * (x - data.x0) + (y - data.y0) * (y - data.y0);
+    var rSquared = (x ) * (x) + (y ) * (y);
     if (rSquared <= data.r0Squared) {
         return dbm(data.p0);
     } else {
-        var theta = Math.atan2(y - data.y0, x - data.x0) - data.theta0;
+        var theta = Math.atan2(y , x ) - data.theta0;
         return dbm(antennaGain(data, theta) * data.r0Squared / rSquared * data.p0);
     }
 }

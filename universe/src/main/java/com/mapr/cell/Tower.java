@@ -15,7 +15,7 @@ import java.util.Random;
  * Each tower is an actor that receives messages from Callers.
  */
 public class Tower extends UntypedActor {
-    private static final double MINIMUM_RECEIVE_POWER = -250;
+    private static final double MINIMUM_RECEIVE_POWER = -50;
     private static int TOWER_ID = 1;
     private final Random rand;
 
@@ -31,7 +31,7 @@ public class Tower extends UntypedActor {
         producer = new KafkaProducer<>(Config.getConfig().getPrefixedProps("kafka."));
         rand = new Random();
         ax = Antenna.omni(rand.nextDouble() * 20e3, rand.nextDouble() * 20e3);
-        ax.setPower(1, 0.01);
+        ax.setPower(24, 1);
         id = String.format("%d", TOWER_ID++);
     }
 
