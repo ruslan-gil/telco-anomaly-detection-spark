@@ -96,13 +96,13 @@ public class Caller extends UntypedActor {
     private void generateMoveParams() {
         xDest = rand.nextDouble() * 20e3;
         yDest = rand.nextDouble() * 20e3;
-        double travelTime = rand.nextDouble() * 1000;
+        double travelTime = rand.nextDouble() * 1000000;
         xSpeed = (xDest - x) / travelTime;
         ySpeed = (yDest - y) / travelTime;
     }
 
     private void move() {
-        if (1 > Math.sqrt(Math.pow(x - xDest, 2) + Math.pow(y - yDest, 2))) {
+        if (1000 > Math.sqrt(Math.pow(x - xDest, 2) + Math.pow(y - yDest, 2))) {
             generateMoveParams();
         }
         x += xSpeed;
