@@ -1,7 +1,6 @@
 package com.mapr.cell.maprdb;
 
 import com.mapr.cell.common.Config;
-
 import java.util.concurrent.ExecutorService;
 
 import static java.util.concurrent.Executors.newFixedThreadPool;

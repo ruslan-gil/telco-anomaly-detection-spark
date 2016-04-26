@@ -77,17 +77,25 @@ function onMove(data) {
 function onStatus(data) {
     d3.select("#tower"+data.towerId)
         .attr("fill",  ramp(data.fails/data.total));
-    if (data.fails/data.total > 0.6) {
-        addAlert(data);
+    if (data.type == "deviation") {
+        addAbnormalAlert(data);
+    } else if (data.type == "failsPercent") {
+        if (data.fails / data.total > 0.6) {
+            addFailsAlert(data);
+        }
     }
 }
 
 function onCdr(d) {
-   if (d.state == "FINISHED") {
+    if (d.state == "FINISHED") {
         calls.delete(d.callerId);
         sessions.delete(d.callerId);
         document.getElementById(`session-info${d.sessionId}`).remove();
-   } else {
+    } else if (d.state == "FAIL") {
+       calls.delete(d.callerId);
+       sessions.delete(d.callerId);
+       document.getElementById(`session-info${d.sessionId}`).remove();
+    } else {
         var tower = towers.get(d.towerId);
         var connection = [{
             x: x(d.x),
@@ -103,7 +111,7 @@ function onCdr(d) {
                     callerId: d.callerId
                 };
         sessions.set(d.callerId, session);
-   }
+    }
 }
 
 function addCalls() {
@@ -122,7 +130,30 @@ function addCalls() {
     }
 }
 
-function addAlert(data){
+function addAbnormalAlert(data){
+    var alert = `<div class="fragment fragment-abnormal">
+                     <div>\
+                         <span class='close' onclick='this.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode); return false;'>x</span>
+                         <h2>Abnormal Behaviour</h2>
+                         <p class="text">
+                             Tower(${data.towerId}) has ${(100 - data.percentOfFails * 100).toFixed(2)}% abnormal fails over 3 Sigma
+                         </p>
+                     </div>
+                 </div>`;
+    var element = document.getElementById("alerts");
+
+    var div = document.createElement('div');
+    div.style.color = "white";
+
+        div.style.background = "#58C2EF";
+
+    div.innerHTML = alert;
+    element.appendChild(div);
+    setTimeout((() => element.removeChild(div)), 1000*10);
+}
+
+
+function addFailsAlert(data){
     var fails = data.fails/data.total * 100;
     var alert = `<div class="fragment">
                      <div>\

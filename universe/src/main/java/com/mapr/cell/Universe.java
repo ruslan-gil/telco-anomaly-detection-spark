@@ -58,7 +58,7 @@ public class Universe extends UntypedActor {
         } else if (message instanceof Messages.Tick) {
             users.tell(message);
         } else if (message instanceof Messages.Move) {
-            System.out.println("Produce message: " + mapper.writeValueAsString(message));
+//            System.out.println("Produce message: " + mapper.writeValueAsString(message));
             producer.send(new ProducerRecord<>(Config.getTopicPath(Config.MOVE_TOPIC_NAME), mapper.writeValueAsString(message)));
         } else {
             unhandled(message);

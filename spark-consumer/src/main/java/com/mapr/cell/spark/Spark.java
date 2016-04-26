@@ -14,12 +14,7 @@ public class Spark {
     JavaStreamingContext jssc;
 
     public Spark(int duration) {
-        SparkConf sparkConf = new SparkConf();
-//        for(Map.Entry<String, String> entry : Config.getConfig().getPrefixedMap("spark.").entrySet()) {
-//            sparkConf.set(entry.getKey(), entry.getValue());
-//        }
-        sparkConf.setAppName("CDR-Analytics");
-        sparkConf.setMaster("local[4]");
+        SparkConf sparkConf = new SparkConf().setAppName("CDR-Analytics").setMaster("local[4]");
         jssc = new JavaStreamingContext(sparkConf, new Duration(duration));
     }
     
