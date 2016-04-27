@@ -6,10 +6,14 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.mapr.cell.common.Config;
 import com.mapr.cell.common.DAO;
 import com.mapr.cell.common.Events;
+import com.mapr.cell.failpolicy.AlwaysBroken;
+import com.mapr.cell.failpolicy.AlwaysWorking;
+import com.mapr.cell.failpolicy.TimeBased;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -18,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Universe extends UntypedActor {
     public static final int TOWER_COUNT = Config.TOWER_COUNT;
     public static final int USER_COUNT = 100;
-    public static final int UNIVERSE_LIVE_TIME = 60*5;
+    public static final int UNIVERSE_LIVE_TIME = 60*10;
 
 
     AtomicInteger finished = new AtomicInteger(0);
@@ -37,9 +41,10 @@ public class Universe extends UntypedActor {
         this.total = userCount + towerCount;
         users = this.getContext().actorOf(new Props((UntypedActorFactory) Caller::new)
                 .withRouter(new BroadcastRouter(userCount)));
-        towers = this.getContext().actorOf(new Props((UntypedActorFactory) Tower::new)
-                .withRouter(new BroadcastRouter(towerCount)));
 
+//        ActorRef failTower = this.getContext().actorOf(new Props( (UntypedActorFactory) (() -> new Tower(new TimeBased()))));
+        UntypedActorFactory factory = new TowerActorFactory();
+        towers = this.getContext().actorOf(new Props(factory).withRouter(new BroadcastRouter(towerCount)));
     }
 
     public void sendEventSync(Events event) {
@@ -74,6 +79,53 @@ public class Universe extends UntypedActor {
         for (int i = 0; i < UNIVERSE_LIVE_TIME; i++) {
             universe.tell(new Messages.Tick());
             Thread.sleep(500);
+        }
+    }
+
+    private static class TowerActorFactory implements UntypedActorFactory {
+        public static final double SHUFFLE = 20e3 / 10;
+        private static int id = 0;
+        private static double x;
+        private static double y;
+
+        final static double row = 3;
+        final static double gap = 20e3 / (row + 1);
+
+        private static Random rand = new Random();
+
+        public TowerActorFactory() {
+            x = gap;
+            y = gap;
+        }
+
+        @Override
+        public Actor create() {
+            return getActor();
+        }
+
+        private synchronized static Actor getActor() {
+            id ++;
+            Tower tower;
+
+            x += rand.nextDouble() * (SHUFFLE) - ((SHUFFLE) / 2);
+            y += rand.nextDouble() * (SHUFFLE) - ((SHUFFLE) / 2);
+
+            if (id == 1) {
+                tower = new Tower(id, x, y, new TimeBased(60*3));
+            } else if (id == 2) {
+                tower = new Tower(id, x, y, new AlwaysBroken());
+            } else if (id == 6) {
+                tower = new Tower(id, x, y, new TimeBased(60*5));
+            } else {
+                tower = new Tower(id, x, y, new AlwaysWorking());
+            }
+
+            x += gap;
+            if (id % row == 0 && id > 0) {
+                y += gap;
+                x = gap;
+            }
+            return tower;
         }
     }
 }
