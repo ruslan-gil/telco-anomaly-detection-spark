@@ -51,6 +51,8 @@ var FIELD = {
     }
 };
 
+var alerts = new Map();
+var abnormalAlerts = new Map();
 var callers = new Map();
 var towers = new Map();
 var calls = new Map();
@@ -64,7 +66,7 @@ var svgContainer = d3.select("#universe").append("svg")
                                         .attr("height", FIELD.output.y)
                                         .style("border", "1px solid black");
 
-var ramp=d3.scale.quantile().domain([0,0.1, 0.6, 0.9, 1]).range(["green","orange", "red", "black"]);
+var ramp=d3.scale.quantile().domain([0,0.2, 0.6, 0.9, 1]).range(["green","orange", "red", "black"]);
 var x=d3.scale.linear().domain([0, FIELD.input.x]).range([0, FIELD.output.x]);
 var y=d3.scale.linear().domain([0, FIELD.input.y]).range([0, FIELD.output.y]);
 
@@ -75,14 +77,14 @@ function onMove(data) {
 }
 
 function onStatus(data) {
-    d3.select("#tower"+data.towerId)
-        .attr("fill",  ramp(data.fails/data.total));
     if (data.type == "deviation") {
         addAbnormalAlert(data);
     } else if (data.type == "failsPercent") {
         if (data.fails / data.total > 0.6) {
             addFailsAlert(data);
         }
+        d3.select("#tower"+data.towerId)
+            .attr("fill",  ramp(data.fails/data.total));
     }
 }
 
@@ -90,11 +92,15 @@ function onCdr(d) {
     if (d.state == "FINISHED") {
         calls.delete(d.callerId);
         sessions.delete(d.callerId);
-        document.getElementById(`session-info${d.sessionId}`).remove();
+        if (document.getElementById(`session-info${d.sessionId}`) != undefined) {
+            document.getElementById(`session-info${d.sessionId}`).remove();
+        }
     } else if (d.state == "FAIL") {
        calls.delete(d.callerId);
        sessions.delete(d.callerId);
-       document.getElementById(`session-info${d.sessionId}`).remove();
+       if (document.getElementById(`session-info${d.sessionId}`) != undefined) {
+           document.getElementById(`session-info${d.sessionId}`).remove();
+       }
     } else {
         var tower = towers.get(d.towerId);
         var connection = [{
@@ -131,12 +137,15 @@ function addCalls() {
 }
 
 function addAbnormalAlert(data){
+    if (abnormalAlerts.get(data.towerId) != undefined) return;
+    abnormalAlerts.set(data.towerId, true);
+
     var alert = `<div class="fragment fragment-abnormal">
                      <div>\
                          <span class='close' onclick='this.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode); return false;'>x</span>
                          <h2>Abnormal Behaviour</h2>
                          <p class="text">
-                             Tower(${data.towerId}) has ${(100 - data.percentOfFails * 100).toFixed(2)}% abnormal fails over 3 Sigma
+                             Tower(${data.towerId}) has ${(data.percentOfFails * 100 - 100).toFixed(2)}% abnormal fails over 3 Sigma
                          </p>
                      </div>
                  </div>`;
@@ -149,12 +158,18 @@ function addAbnormalAlert(data){
 
     div.innerHTML = alert;
     element.appendChild(div);
-    setTimeout((() => element.removeChild(div)), 1000*10);
+    setTimeout((() => {
+        element.removeChild(div);
+        abnormalAlerts.delete(data.towerId);
+    }), 9000);
 }
 
 
-function addFailsAlert(data){
+function addFailsAlert(data) {
     var fails = data.fails/data.total * 100;
+    if (alerts.get(data.towerId) != undefined) return;
+
+    alerts.set(data.towerId, true);
     var alert = `<div class="fragment">
                      <div>\
                          <span class='close' onclick='this.parentNode.parentNode.parentNode.removeChild(this.parentNode.parentNode); return false;'>x</span>
@@ -176,7 +191,10 @@ function addFailsAlert(data){
 
     div.innerHTML = alert;
     element.appendChild(div);
-    setTimeout((() => element.removeChild(div)), 1000*10);
+    setTimeout((() => {
+        element.removeChild(div);
+        alerts.delete(data.towerId);
+    }), 6000);
 }
 
 function addCallers() {
@@ -197,14 +215,13 @@ function addCallers() {
 
 }
 
-var P_MIN = -50;
 function onInit(data) {
     var display = [];
     towers.set(data.towerId, data);
     for (var theta = 0; theta < 2 * Math.PI; theta += 0.01) {
         var x = Math.cos(theta);
         var y = Math.sin(theta);
-        var r = Math.sqrt(Math.pow(10, power(data, x, y) / 20) / Math.pow(10, P_MIN / 20));
+        var r = Math.sqrt(Math.pow(10, power(data, x, y) / 20) / Math.pow(10, data.P_MIN / 20));
         display.push({"x": (data.x0 + r * x)*FIELD.output.x/FIELD.input.x,
 
                        "y": (data.y0 + r * y)*FIELD.output.y/FIELD.input.y});

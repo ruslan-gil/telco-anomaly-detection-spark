@@ -15,7 +15,7 @@ public class Config {
     private final  static  String TOWER_STREAM = "tower%s";
     public static String KAFKA_GROUP_ID = "group.id";
 
-    public static final int TOWER_COUNT = 20;
+    public static final int TOWER_COUNT = 6;
 
 
     private Properties properties = new Properties();

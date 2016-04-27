@@ -7,6 +7,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Properties;
 
 class CDRConsumer implements Runnable {
@@ -19,7 +20,7 @@ class CDRConsumer implements Runnable {
         props.setProperty(Config.KAFKA_GROUP_ID, GROUP_ID);
         dao = DAO.getInstance();
         consumer = new KafkaConsumer<>(props);
-        consumer.subscribe(Arrays.asList(Config.getTowerStream(id)));
+        consumer.subscribe(Collections.singletonList(Config.getTowerStream(id)));
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             consumer.close();
         }));

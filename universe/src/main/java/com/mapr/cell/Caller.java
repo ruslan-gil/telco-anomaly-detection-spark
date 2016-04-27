@@ -16,10 +16,10 @@ public class Caller extends UntypedActor {
     enum State {IDLE, CONNECTING, LIVE}
 
     // how often should heartbeats be done?
-    public static final int HEARTBEAT_SPREAD = 30;
-    private static final double HEARTBEAT_MIN = 10;
-    private static final double AVERAGE_CALL_LENGTH = 30;
-    private static final double CONNECT_TIMEOUT = 8;
+    public static final int HEARTBEAT_SPREAD = 10;
+    private static final double HEARTBEAT_MIN = 3;
+    private static final double AVERAGE_CALL_LENGTH = 15;
+    private static final double CONNECT_TIMEOUT = 4;
 
     private ActorRef  universe;
 
@@ -78,8 +78,8 @@ public class Caller extends UntypedActor {
     public Caller() {
         rand = new Random();
         id = String.format("%08x", rand.nextInt());
-        nextHeartBeat = rand.nextDouble() * 30;
-        nextCall = 30 + 200 * rand.nextDouble();
+        nextHeartBeat = getNextHeartbeat(time);
+        nextCall = getNextCallTime(time);
         signals = Collections.synchronizedMap(new LinkedHashMap<String, Report>() {
             @Override
             protected boolean removeEldestEntry(Map.Entry<String, Report> eldest) {
@@ -96,7 +96,7 @@ public class Caller extends UntypedActor {
     private void generateMoveParams() {
         xDest = rand.nextDouble() * 20e3;
         yDest = rand.nextDouble() * 20e3;
-        double travelTime = rand.nextDouble() * 1000000;
+        double travelTime = rand.nextDouble() * 10000;
         xSpeed = (xDest - x) / travelTime;
         ySpeed = (yDest - y) / travelTime;
     }
@@ -127,7 +127,7 @@ public class Caller extends UntypedActor {
             Thread.sleep(50);
             // every so often, we need to ask for a signal report
             if (time > nextHeartBeat) {
-                nextHeartBeat = time + HEARTBEAT_MIN + HEARTBEAT_SPREAD * rand.nextDouble();
+                nextHeartBeat = getNextHeartbeat(time);
                 towers.tell(new Messages.SignalReportRequest(getSelf(), x, y));
             }
 
@@ -145,6 +145,15 @@ public class Caller extends UntypedActor {
             unhandled(message);
         }
     }
+
+    private double getNextHeartbeat(double time) {
+        return time + HEARTBEAT_MIN + HEARTBEAT_SPREAD * rand.nextDouble();
+    }
+
+    private double getNextCallTime(double time) {
+        return time + 15 + 50 * rand.nextDouble();
+    }
+
 
     private void transition(Object message) {
         switch (currentState) {
@@ -169,7 +178,7 @@ public class Caller extends UntypedActor {
                     tryNextTower();
                 } else if (message instanceof Messages.Connect) {
                     Messages.Connect connectMessage = (Messages.Connect) message;
-                    refreshCall = time + HEARTBEAT_MIN + HEARTBEAT_SPREAD * rand.nextDouble();
+                    refreshCall = getNextHeartbeat(time);
                     currentState = State.LIVE;
                     cdr.setLastReconnectTime(time);
                     currentTower = connectMessage.tower;
@@ -198,7 +207,7 @@ public class Caller extends UntypedActor {
                     currentTowerId = null;
                     live = null;
                     currentState = State.IDLE;
-                    nextCall = time + 30 + 200 * rand.nextDouble();
+                    nextCall = getNextCallTime(time);
                     System.out.printf("end at %.0f, next call at %.0f\n", time, nextCall);
                     cdr = null;
                 }

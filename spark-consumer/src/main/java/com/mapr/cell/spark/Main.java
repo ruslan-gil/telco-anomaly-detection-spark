@@ -26,8 +26,8 @@ import scala.Tuple2;
 import java.util.*;
 
 public class Main {
-    public static final int SINGLE_RDD_DURATION = 3000;
-    public static final int WINDOW_DURATION = 6000;
+    public static final int SINGLE_RDD_DURATION = 7000;
+    public static final int WINDOW_DURATION = 21000;
     public static final ObjectMapper MAPPER = new ObjectMapper();
 
     public static void main(String[] args) {
@@ -154,7 +154,7 @@ public class Main {
                 .filter((Function<Map, Boolean>) map -> ((Integer) map.get("simulationId") == DAO.getInstance().getLastSimulationID()))
                 .filter((Function<Map, Boolean>) map -> {
                     List<Double> failsHistory = MAPPER.readValue(map.get("towerFailsHistory").toString(), new TypeReference<List<Double>>(){});
-                    return (!(failsHistory.size() < 3));
+                    return (!(failsHistory.size() < 5));
                 })
                 .mapToPair((PairFunction<Map, String, Tuple2<Double, Double>>) stat -> {
                     List<Double> failsHistory = MAPPER.readValue(stat.get("towerFailsHistory").toString(), new TypeReference<List<Double>>() {
@@ -164,17 +164,17 @@ public class Main {
                     return new Tuple2<>(stat.get("towerId").toString(), new Tuple2<>(m, sigma));
                 });
 
-        JavaPairDStream<String, Double> towerErrorPercent = windowTowerFails.join(windowFailCalculate)
-            .mapToPair((PairFunction<Tuple2<String, Tuple2<Integer, Tuple2<Double, Double>>>,String, Double>) stats -> {
+        JavaPairDStream<String, Double> towerErrorPercent = windowTowerStatus.join(windowFailCalculate)
+            .mapToPair((PairFunction<Tuple2<String, Tuple2<Tuple2<Integer,Integer>, Tuple2<Double, Double>>>,String, Double>) stats -> {
                     double avg = stats._2()._2()._1();
                     double sigma = stats._2()._2()._2();
-                    double fails = stats._2()._1();
+                    double fails = ((double)stats._2()._1()._1()/stats._2()._1()._2());
                     Double result = (Math.abs(fails - avg) / (3 * sigma));
                     return new Tuple2<>(stats._1(), result.doubleValue());
             });
 
         towerErrorPercent
-                .filter((Function<Tuple2<String,Double>, Boolean>) val -> (val._2() >= 1))
+                .filter((Function<Tuple2<String,Double>, Boolean>) val -> (val._2() >= 1) && (!(val._2().isInfinite())) && (!val._2().isNaN()))
                 .map((Function<Tuple2<String, Double>, String>) tuple ->
                          new JSONObject()
                                 .put("towerId", tuple._1())
