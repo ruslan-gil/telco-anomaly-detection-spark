@@ -12,9 +12,7 @@ import com.mapr.cell.failpolicy.TimeBased;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.util.Random;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A world of actors, some of whom are callers, some of whom are towers.
@@ -24,13 +22,10 @@ public class Universe extends UntypedActor {
     public static final int USER_COUNT = 100;
     public static final int UNIVERSE_LIVE_TIME = 60*10;
 
-
-    AtomicInteger finished = new AtomicInteger(0);
     private final ActorRef users;
     private final ActorRef towers;
-    private final int total;
     private KafkaProducer<String, String> producer;
-    ObjectMapper mapper = new ObjectMapper();
+    private ObjectMapper mapper = new ObjectMapper();
 
     public Universe(int userCount, int towerCount) {
         producer = new KafkaProducer<>(Config.getConfig().getPrefixedProps("kafka."));
@@ -38,11 +33,9 @@ public class Universe extends UntypedActor {
         sendEventSync(Events.SIMULATION_STARTS);
         DAO.getInstance().newSimulation();
 
-        this.total = userCount + towerCount;
         users = this.getContext().actorOf(new Props((UntypedActorFactory) Caller::new)
                 .withRouter(new BroadcastRouter(userCount)));
 
-//        ActorRef failTower = this.getContext().actorOf(new Props( (UntypedActorFactory) (() -> new Tower(new TimeBased()))));
         UntypedActorFactory factory = new TowerActorFactory();
         towers = this.getContext().actorOf(new Props(factory).withRouter(new BroadcastRouter(towerCount)));
     }
@@ -63,7 +56,6 @@ public class Universe extends UntypedActor {
         } else if (message instanceof Messages.Tick) {
             users.tell(message);
         } else if (message instanceof Messages.Move) {
-//            System.out.println("Produce message: " + mapper.writeValueAsString(message));
             producer.send(new ProducerRecord<>(Config.getTopicPath(Config.MOVE_TOPIC_NAME), mapper.writeValueAsString(message)));
         } else {
             unhandled(message);
@@ -71,14 +63,22 @@ public class Universe extends UntypedActor {
     }
 
     public static void main(String[] args) throws InterruptedException {
+
         ActorSystem system = ActorSystem.create("telco");
         ActorRef universe = system.actorOf(new Props((UntypedActorFactory) () -> new Universe(USER_COUNT, TOWER_COUNT)));
 
         universe.tell(new Messages.Start());
 
-        for (int i = 0; i < UNIVERSE_LIVE_TIME; i++) {
-            universe.tell(new Messages.Tick());
-            Thread.sleep(500);
+        if (args[0].equals("true")) {
+            while (true) {
+                universe.tell(new Messages.Tick());
+                Thread.sleep(500);
+            }
+        } else {
+            for (int i = 0; i < UNIVERSE_LIVE_TIME; i++) {
+                universe.tell(new Messages.Tick());
+                Thread.sleep(500);
+            }
         }
     }
 

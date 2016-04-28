@@ -7,20 +7,14 @@ source.addEventListener('init', function(e) {
 }, false);
 
 source.addEventListener('move', function(e) {
-//    console.log('move');
-//    console.log(JSON.parse(e.data));
     onMove(JSON.parse(e.data));
 }, false);
 
 source.addEventListener('status', function(e) {
-//    console.log('status');
-//    console.log(JSON.parse(e.data));
     onStatus(JSON.parse(e.data));
 }, false);
 
 source.addEventListener('cdr', function(e) {
-//    console.log('cdr');
-//    console.log(JSON.parse(e.data));
     onCdr(JSON.parse(e.data));
 }, false);
 
@@ -247,8 +241,6 @@ setInterval(function(){
     addCallers();
     addCalls();
 }, 1000);
-
-
 
 function power(data, x, y) {
     var rSquared = (x ) * (x) + (y ) * (y);

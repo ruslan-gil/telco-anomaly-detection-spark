@@ -30,7 +30,7 @@ function updateSessions() {
             } else {
                 updateSession(info, curStats);
             }
-        }
+    }
 }
 
 function addNewSession(info, curStats){
@@ -69,7 +69,6 @@ function storeStatistics(data) {
 }
 
 function visualizeStatistics() {
-     var globalStat = new Map();
      var fails = 0;
      var duration = 0;
      var time = 0;

@@ -29,6 +29,4 @@ public class Spark {
         jssc.start();
         jssc.awaitTermination();
     }
-
-
 }

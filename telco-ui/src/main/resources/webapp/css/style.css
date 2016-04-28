@@ -16,7 +16,6 @@
 
 .fragment:hover {
     box-shadow: 2px 2px 5px rgba(0,0,0,.2);
-
 }
 
 .fragment h3 {
@@ -24,6 +23,7 @@
     margin: 0;
     color: #369;
 }
+
 .close {
     float:right;
     display:inline-block;
@@ -39,28 +39,29 @@
     float: left;
 }
 
-
 .demo-content{
     padding: 10px;
     font-size: 16px;
-    /*min-height: 300px;*/
     min-width: 100px;
     margin-bottom: 10px;
     vertical-align: middle;
     float: right;
 }
+
 .info {
     float: left;
 }
+
 .graphic {
-    /*overflow: hidden;*/
     overflow: hidden;
     position: relative;
 }
+
 fieldset.tower-info{
     min-height: 300px;
     min-width: 100px;
 }
+
 legend {
     width:inherit; /* Or auto */
     padding:0 10px; /* To give a bit of padding on the left and right */
@@ -68,6 +69,7 @@ legend {
     font-size: 1.2em !important;
     text-align: left !important;
 }
+
 fieldset {
     border: 4px solid #8f8f8f !important;
     padding: 0 1.4em 1.4em 1.4em !important;
@@ -75,19 +77,23 @@ fieldset {
     -webkit-box-shadow:  0 0 0 0 #000;
     box-shadow:  0 0 0 0 #000;
 }
+
 fieldset.session {
     height: 200px;
 }
+
 .container-board {
     overflow-y: auto;
     min-width: 100%;
     height: 250px;
 }
+
 .session-container {
     overflow-y: auto;
     min-width: 100%;
     height: 150px;
 }
+
 .block {
     border:2px solid rgba(68, 68, 68, 0.75);
     width:100%;
@@ -104,13 +110,16 @@ fieldset.session {
     padding: 10px;
     margin-top: 1%;
 }
+
 td {
     padding: 6px;
 }
+
 span.underline {
     text-decoration: underline;
     color: #2b79ff;
 }
+
 path.call {
   stroke: #FFA319;
 }

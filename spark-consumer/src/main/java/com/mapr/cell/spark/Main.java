@@ -22,13 +22,21 @@ import org.codehaus.jackson.type.TypeReference;
 import org.codehaus.jettison.json.JSONObject;
 import org.ojai.Document;
 import scala.Tuple2;
-
-import java.util.*;
+import java.util.Set;
+import java.util.Map;
+import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.HashSet;
+import java.util.ArrayList;
 
 public class Main {
-    public static final int SINGLE_RDD_DURATION = 7000;
-    public static final int WINDOW_DURATION = 21000;
-    public static final ObjectMapper MAPPER = new ObjectMapper();
+    /**
+     * These two parameters must be multiples of the batch interval
+     */
+    private static final int SINGLE_RDD_DURATION = 7000;
+    private static final int WINDOW_DURATION = 21000;
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     public static void main(String[] args) {
 
@@ -78,14 +86,12 @@ public class Main {
         // MapRDB
         JavaReceiverInputDStream<String> cdrsDbRecords = spark.jssc.receiverStream(new MaprDBReceiver.CDRReceiver());
 
-
         JavaDStream<CDR> dbCdrs = cdrsDbRecords.map((Function<String, CDR>) CDR::stringToCDR);
 
         JavaPairDStream<String, CDR> towerInfo = dbCdrs.mapToPair((PairFunction<CDR, String, CDR>) cdr ->
                 new Tuple2<>(cdr.getTowerId(), cdr));
 
         JavaPairDStream<String, Iterable<CDR>> groupedByTower = towerInfo.groupByKey();
-
 
         JavaPairDStream<String, Double> towerAllInfo = groupedByTower
                 .mapValues((Function<Iterable<CDR>, Double>) cdrs1 -> (double) Iterables.size(cdrs1));

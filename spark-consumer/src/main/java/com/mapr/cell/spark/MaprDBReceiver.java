@@ -1,6 +1,5 @@
 package com.mapr.cell.spark;
 
-
 import com.mapr.cell.common.DAO;
 import com.mapr.db.MapRDB;
 import com.mapr.db.Table;

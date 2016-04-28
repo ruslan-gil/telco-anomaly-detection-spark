@@ -6,8 +6,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.mapr.cell.common.CDR;
 
-
-import java.util.*;
+import java.util.Random;
+import java.util.Queue;
+import java.util.LinkedList;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 /**
  * Implements a session initiation state machine
@@ -73,7 +79,7 @@ public class Caller extends UntypedActor {
         }
     }
 
-    State currentState = State.IDLE;
+    private State currentState = State.IDLE;
 
     public Caller() {
         rand = new Random();
@@ -119,8 +125,9 @@ public class Caller extends UntypedActor {
     @Override
     public void onReceive(Object message) throws Exception {
         if (message instanceof Messages.Setup) {
-            towers = ((Messages.Setup) message).towers;
-            universe = ((Messages.Setup) message).universe;
+            Messages.Setup setupMessage = (Messages.Setup) message;
+            towers = (setupMessage).towers;
+            universe = (setupMessage).universe;
         } else if (message instanceof Messages.Tick) {
             time++;
             move();
@@ -158,60 +165,76 @@ public class Caller extends UntypedActor {
     private void transition(Object message) {
         switch (currentState) {
             case IDLE:
-                if (time > nextCall) {
-                    currentState = State.CONNECTING;
-                    connectTimeout = time + CONNECT_TIMEOUT;
-                    endCall = time - AVERAGE_CALL_LENGTH * Math.log(1 - rand.nextDouble());
-                    sortCandidates();
-                    tryNextTower();
-                }
+                processingIdleState();
                 break;
             case CONNECTING:
-//                System.out.printf("Connecting at %.0f with timeout at %.0f, %s\n", time, connectTimeout, message.getClass());
-                if (time > connectTimeout && live != null && live.hasNext()) {
-                    System.out.printf("Timed out at %.0f,%.0f,%s\n", time, connectTimeout, message.getClass().toString());
-                    // no answer ... just another form of rejection
-                    tryNextTower();
-                } else if (message instanceof Messages.Fail && live != null && live.hasNext()) {
-                    System.out.printf("Failed at %.0f with timeout at %.0f, %s\n", time, connectTimeout, message.getClass());
-                    // we were rejected
-                    tryNextTower();
-                } else if (message instanceof Messages.Connect) {
-                    Messages.Connect connectMessage = (Messages.Connect) message;
-                    refreshCall = getNextHeartbeat(time);
-                    currentState = State.LIVE;
-                    cdr.setLastReconnectTime(time);
-                    currentTower = connectMessage.tower;
-                    currentTowerId = connectMessage.towerId;
-                    System.out.printf("Connected at %.0f with refresh at %.0f,%.0f to %s, %s\n", time, refreshCall, endCall, currentTowerId, message.getClass());
-                } else if (message instanceof Messages.Tick) {
-//                    System.out.printf("Tick at %.0f with timeout at %.0f, %s\n", time, connectTimeout, message.getClass());
-                    // ignore
-                } else {
-                    // failed to get anybody to talk to us
-                    System.out.printf("Blew out at %.0f with timeout at %.0f, %s\n", time, connectTimeout, message.getClass());
-                    live = null;
-                    currentState = State.IDLE;
-                }
+                processingConnectingState(message);
                 break;
             case LIVE:
-                if (time > refreshCall) {
-                    System.out.printf("refreshing at %.0f\n", time);
-                    currentState = State.CONNECTING;
-                    sortCandidates();
-                    tryNextTower();
-                } else if (time > endCall) {
-                    cdr.finishCDR(time);
-                    currentTower.tell(new Messages.Disconnect(id, cdr.cloneCDR()));
-                    currentTower = null;
-                    currentTowerId = null;
-                    live = null;
-                    currentState = State.IDLE;
-                    nextCall = getNextCallTime(time);
-                    System.out.printf("end at %.0f, next call at %.0f\n", time, nextCall);
-                    cdr = null;
-                }
+                processingLiveState();
                 break;
+        }
+    }
+
+    private void processingIdleState() {
+        if (time > nextCall) {
+            currentState = State.CONNECTING;
+            connectTimeout = time + CONNECT_TIMEOUT;
+            endCall = time - AVERAGE_CALL_LENGTH * Math.log(1 - rand.nextDouble());
+            sortCandidates();
+            tryNextTower();
+        }
+    }
+
+    private void processingConnectingState(Object message) {
+
+        if (time > connectTimeout && live != null && live.hasNext()) {
+            System.out.printf("Timed out at %.0f,%.0f,%s\n", time, connectTimeout, message.getClass().toString());
+            // no answer ... just another form of rejection
+            tryNextTower();
+
+        } else if (message instanceof Messages.Fail && live != null && live.hasNext()) {
+            System.out.printf("Failed at %.0f with timeout at %.0f, %s\n", time, connectTimeout, message.getClass());
+            // we were rejected
+            tryNextTower();
+
+        } else if (message instanceof Messages.Connect) {
+            Messages.Connect connectMessage = (Messages.Connect) message;
+            refreshCall = getNextHeartbeat(time);
+            currentState = State.LIVE;
+            cdr.setLastReconnectTime(time);
+            currentTower = connectMessage.tower;
+            currentTowerId = connectMessage.towerId;
+            System.out.printf("Connected at %.0f with refresh at %.0f,%.0f to %s, %s\n", time, refreshCall, endCall, currentTowerId, message.getClass());
+
+        } else if (message instanceof Messages.Tick) {
+            // ignore
+        } else {
+            // failed to get anybody to talk to us
+            System.out.printf("Blew out at %.0f with timeout at %.0f, %s\n", time, connectTimeout, message.getClass());
+            live = null;
+            currentState = State.IDLE;
+        }
+    }
+
+    private void processingLiveState() {
+        if (time > refreshCall) {
+            System.out.printf("refreshing at %.0f\n", time);
+            currentState = State.CONNECTING;
+
+            sortCandidates();
+            tryNextTower();
+
+        } else if (time > endCall) {
+            cdr.finishCDR(time);
+            currentTower.tell(new Messages.Disconnect(id, cdr.cloneCDR()));
+            currentTower = null;
+            currentTowerId = null;
+            live = null;
+            currentState = State.IDLE;
+            nextCall = getNextCallTime(time);
+            System.out.printf("end at %.0f, next call at %.0f\n", time, nextCall);
+            cdr = null;
         }
     }
 

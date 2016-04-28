@@ -15,7 +15,6 @@ public class RealTimeApi extends EventSourceServlet {
 
     private LiveConsumer consumer = new LiveConsumer();
 
-
     @Override
     protected EventSource newEventSource(final HttpServletRequest req) {
         return new DataSource(consumer);

@@ -8,9 +8,6 @@ import org.ojai.store.DocumentMutation;
 
 import java.util.Date;
 
-
-
-
 public class DAO {
 
     public static final String SIMULATION_KEY = "SIMULATION_KEY";
@@ -56,12 +53,11 @@ public class DAO {
         System.out.println("Check DB");
         synchronized (lock) {
             if (!MapRDB.tableExists(tableName)) {
-                table = MapRDB.createTable(tableName); // Create the table if not already present
+                table = MapRDB.createTable(tableName);
             } else {
-                table = MapRDB.getTable(tableName); // get the table
+                table = MapRDB.getTable(tableName);
             }
         }
-
         return table;
     }
 
@@ -76,7 +72,6 @@ public class DAO {
     private void addInitialStats() {
         long lastSimulationID = getLastSimulationID();
         for(int i=1; i<=Config.TOWER_COUNT; i++) {
-
             Document towerDoc = MapRDB.newDocument().
                     set("_id", lastSimulationID+"/tower"+i).
                     set("towerId", i).
@@ -92,11 +87,8 @@ public class DAO {
     }
 
     public long getLastSimulationID() {
-        try{
-            return simulationTable.findById(SIMULATION_KEY).getInt("simulationId");
-        } catch(NullPointerException e) {
-            return -1;
-        }
+        Document document = simulationTable.findById(SIMULATION_KEY);
+        return document != null ? document.getInt("simulationId") : -1;
     }
 
     public void addCDR(String cdrJson) {

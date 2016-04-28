@@ -8,18 +8,19 @@ import java.util.Properties;
 
 public class Config {
     public static final String CONFIG_CONF = "/tmp/config.conf";
+    private final static String TOPIC_PATH = "/telco:";
     public static String INIT_TOPIC_NAME = "init";
     public static String MOVE_TOPIC_NAME = "move";
     public static String FAIL_TOWER_STREAM = "fail_tower";
     public static String EVENT_TOPIC_NAME = "event";
-    private final  static  String TOWER_STREAM = "tower%s";
+    private final  static String TOWER_STREAM = "tower%s";
     public static String KAFKA_GROUP_ID = "group.id";
 
     public static final int TOWER_COUNT = 6;
 
-
     private Properties properties = new Properties();
     private static Config instance;
+
     private Config() {
         try (InputStream props = new FileInputStream(CONFIG_CONF)) {
             properties.load(props);
@@ -43,6 +44,14 @@ public class Config {
             }
         }
         return props;
+    }
+
+    public static String getTowerTopicName(){
+        return TOPIC_PATH + TOWER_STREAM;
+    }
+
+    public static String getInitName(){
+        return TOPIC_PATH + INIT_TOPIC_NAME;
     }
 
     public Properties getPrefixedProps(String prefix) {

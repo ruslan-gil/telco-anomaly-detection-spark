@@ -30,10 +30,11 @@ public class TelcoRestApi {
     public Response getData() throws JsonProcessingException {
 
         List<Document> items = new ArrayList<>();
+        ObjectMapper object = new ObjectMapper();
         table = dao.getStatsTable();
+
         QueryCondition c = MapRDB.newCondition().is("simulationId", QueryCondition.Op.EQUAL, dao.getLastSimulationID());
         DocumentStream rs = table.find(c);
-        ObjectMapper object = new ObjectMapper();
 
         if (rs != null) {
             for(Document doc : rs) {
