@@ -69,10 +69,12 @@ public class Universe extends UntypedActor {
 
         universe.tell(new Messages.Start());
 
-        if (args[0].equals("true")) {
-            while (true) {
-                universe.tell(new Messages.Tick());
-                Thread.sleep(500);
+        if (args.length > 0) {
+            if (args[0].equals("true")) {
+                while (true) {
+                    universe.tell(new Messages.Tick());
+                    Thread.sleep(500);
+                }
             }
         } else {
             for (int i = 0; i < UNIVERSE_LIVE_TIME; i++) {
