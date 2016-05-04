@@ -94,13 +94,11 @@ public class DAO {
     public void addCDR(String cdrJson) {
         Document document = MapRDB.newDocument(cdrJson);
         document.set("simulationId", getLastSimulationID());
-        //TODO: add zeros to constant length (for dzhuribeda)
-        cdrsTable.insert("0000"+document.getLong("simulationId")+"/00000"+document.getDouble("time") +"/"+ document.getString("callerId")+"/"
+        cdrsTable.insert(String.format("%08d", document.getLong("simulationId"))+"/00000"+document.getDouble("time") +"/"+ document.getString("callerId")+"/"
                 + document.getString("towerId") +"/"+document.getString("state"), document);
         System.out.println("inserted " + document.toString());
         cdrsTable.flush();
     }
-
     public void sendTowerStats(Document stats) {
         statsTable.insertOrReplace(stats);
         statsTable.flush();
