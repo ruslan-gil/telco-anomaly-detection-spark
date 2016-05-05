@@ -9,8 +9,10 @@ Anomaly Detection in Telcos with Spark
 1. ssh to the cluster machine.
 2. If java7 or lower version is installed on cluster, install java8.
     Tutorial(use commands with sudo) => http://tecadmin.net/install-java-8-on-centos-rhel-and-fedora/.
-3. Clone the git repo with project to `/home/vagrant/telco-anomaly-detection-spark`.
-4. Create streams, topics and directories on the cluster machine:
+3. If you don't have maven installed, install it. 
+    Tutorial => http://preilly.me/2013/05/10/how-to-install-maven-on-centos/.
+4. Clone the git repo with project to `/home/vagrant/telco-anomaly-detection-spark`.
+5. Create streams, topics and directories on the cluster machine:
   ```
   sudo -u mapr -s
   # create streams
@@ -36,7 +38,7 @@ Anomaly Detection in Telcos with Spark
   
   exit
   ```
-5. Copy configuration and add permissions for the `run.sh`:
+6. Copy configuration and add permissions for the `run.sh`:
 
   ```
   # go to the folder telco-anomaly-detection-spark
@@ -44,13 +46,20 @@ Anomaly Detection in Telcos with Spark
   chmod 777 run.sh
   cp common/src/main/resources/config.conf /tmp/
   ```
-6. Run the start script:
+7. Build project:
+
+  ```
+  # go to the folder telco-anomaly-detection-spark
+  cd /home/vagrant/telco-anomaly-detection-spark
+  mvn package
+  ```
+8. Run the start script:
   ```
   sudo -u mapr -s
   cd /home/vagrant/telco-anomaly-detection-spark
   ./run.sh
   ```
-7. Now you can open UI in browser:
+9. Now you can open UI in browser:
 
     - telco ui `http://[cluster-node-ip]:8080/`
     - spark ui `http://[cluster-node-ip]:4040/jobs/#active`
