@@ -18,13 +18,6 @@
             <snapshots><enabled>true</enabled></snapshots>
             <releases><enabled>true</enabled></releases>
         </repository>
-
-        <repository>
-            <id>mapr-private</id>
-            <url>http://repository_cv.mapr.com/maven/</url>
-            <snapshots><enabled>true</enabled></snapshots>
-            <releases><enabled>true</enabled></releases>
-        </repository>
     </repositories>
 
     <dependencies>
@@ -42,7 +35,7 @@
         <dependency>
             <groupId>com.mapr.streams</groupId>
             <artifactId>mapr-streams</artifactId>
-            <version>5.1.0-mapr-SNAPSHOT</version>
+            <version>5.1.0-mapr</version>
         </dependency>
         <dependency>
             <groupId>org.apache.kafka</groupId>

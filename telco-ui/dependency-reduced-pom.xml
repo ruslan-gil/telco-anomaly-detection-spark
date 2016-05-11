@@ -74,12 +74,6 @@
       <id>mapr-releases</id>
       <url>http://repository.mapr.com/maven/</url>
     </repository>
-    <repository>
-      <releases />
-      <snapshots />
-      <id>mapr-private</id>
-      <url>http://repository_cv.mapr.com/maven/</url>
-    </repository>
   </repositories>
   <properties>
     <jersey.version>2.22.2</jersey.version>
