@@ -61,5 +61,11 @@ Anomaly Detection in Telcos with Spark
   ```
 9. Now you can open UI in browser:
 
-    - telco ui `http://[cluster-node-ip]:8080/`
+    - telco ui `http://[cluster-node-ip]:9090/`
     - spark ui `http://[cluster-node-ip]:4040/jobs/#active`
+
+You can also manually start the Web UI on another port using the following command:
+
+```
+java -Ddemo.http.port=9999 -jar telco-ui/target/telcoui.jar 
+```

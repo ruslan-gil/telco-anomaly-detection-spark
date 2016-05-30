@@ -18,7 +18,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 	
-	    String httpPort = System.getProperty("demo.http.port", "8080");
+	    String httpPort = System.getProperty("demo.http.port", "9090");
     
 	
         LOG.info("================================================");
