@@ -4,6 +4,14 @@ Anomaly Detection in Telcos with Spark
 
 [Specifications Available in the Wiki](https://github.com/mapr-demos/telco-anomaly-detection-spark/wiki/Specifications)
 
+## Security note
+
+Please note that you should only run this code on Spark 2.2 or higher. 
+Spark 2.1 has known security issues. I haven't updated the version 
+here because I don't have time to test the impact of the changes 
+(and this is only a demo, after all).
+
+
 ## Run on cluster
 
 1. ssh to the cluster machine.
