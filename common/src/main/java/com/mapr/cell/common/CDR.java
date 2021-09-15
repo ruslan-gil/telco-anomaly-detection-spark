@@ -179,7 +179,7 @@ public class CDR implements Serializable{
     public static CDR stringToCDR(String jsonStr) {
         CDR cdr = new CDR();
         try {
-            Map<String, Object> jsonMap = new ObjectMapper().readValue(jsonStr, new TypeReference<Map<String, String>>(){});
+            Map<String, Object> jsonMap = new ObjectMapper().readValue(jsonStr, new TypeReference<Map<String, Object>>(){});
             jsonMap.put("state", State.valueOf((String) jsonMap.get("state")));
 
             BeanUtilsBean.getInstance().getConvertUtils().register(false, false, 0);

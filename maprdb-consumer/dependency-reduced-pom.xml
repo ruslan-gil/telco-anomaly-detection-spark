@@ -42,7 +42,7 @@
       <releases />
       <snapshots />
       <id>mapr-releases</id>
-      <url>http://repository.mapr.com/maven/</url>
+      <url>https://repository.mapr.com/maven/</url>
     </repository>
   </repositories>
 </project>

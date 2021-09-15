@@ -1,5 +1,9 @@
 package com.mapr.cell.spark;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.Iterables;
 import com.mapr.cell.common.CDR;
 import com.mapr.cell.common.Config;
@@ -13,15 +17,15 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.streaming.Duration;
-import org.apache.spark.streaming.api.java.*;
-import org.codehaus.jackson.JsonFactory;
-import org.codehaus.jackson.JsonNode;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.type.TypeReference;
-import org.codehaus.jettison.json.JSONObject;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.spark.streaming.api.java.JavaDStream;
+import org.apache.spark.streaming.api.java.JavaPairDStream;
+import org.apache.spark.streaming.api.java.JavaPairInputDStream;
+import org.apache.spark.streaming.api.java.JavaReceiverInputDStream;
 import org.ojai.Document;
 import scala.Tuple2;
+
 import java.util.Set;
 import java.util.Map;
 import java.util.List;
@@ -29,6 +33,7 @@ import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.ArrayList;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public class Main {
     /**
      * These two parameters must be multiples of the batch interval
@@ -72,11 +77,14 @@ public class Main {
         JavaPairDStream<String, Tuple2<Integer, Integer>> towerStatus = towerFails.join(towerCounts);
 
         towerStatus.map((Function<Tuple2<String, Tuple2<Integer, Integer>>, String>) tuple ->
-                new JSONObject().
-                        put("towerId", tuple._1()).
-                        put("fails", tuple._2()._1()).
-                        put("type", "failsPercent").
-                        put("total", tuple._2()._2()).toString()).
+                {
+                    ObjectNode obj = MAPPER.createObjectNode();
+                    obj.put("towerId", tuple._1());
+                    obj.put("fails", tuple._2()._1());
+                    obj.put("type", "failsPercent");
+                    obj.put("total", tuple._2()._2());
+                    return obj.toString();
+                }).
                 foreachRDD((Function<JavaRDD<String>, Void>) stringJavaRDD -> {
                     stringJavaRDD.foreach((VoidFunction<String>) s ->
                             getKafkaProducer().send(new ProducerRecord<>(Config.getTopicPath(Config.FAIL_TOWER_STREAM), s)));
@@ -99,8 +107,8 @@ public class Main {
         JavaPairDStream<String, Double> towerTime = groupedByTower
                 .mapValues((Function<Iterable<CDR>, Double>) cdrs1 -> {
                     double max = Double.MIN_VALUE;
-                    for(CDR cdr : cdrs1) {
-                        max = max<cdr.getTime() ? cdr.getTime() : max;
+                    for (CDR cdr : cdrs1) {
+                        max = Math.max(max, cdr.getTime());
                     }
                     return max;
                 });
@@ -142,9 +150,9 @@ public class Main {
         // MapRDB stats by tower
         JavaReceiverInputDStream<String> statsDbRecords = spark.jssc.receiverStream(new MaprDBReceiver.StatsReceiver());
 
-        JavaDStream<Map> dbStats= statsDbRecords.map((Function<String, Map>) s -> {
-            JsonFactory factory = MAPPER.getJsonFactory(); // since 2.1 use mapper.getFactory() instead
-            JsonParser jp = factory.createJsonParser(s);
+        JavaDStream<Map> dbStats = statsDbRecords.map((Function<String, Map>) s -> {
+            JsonFactory factory = MAPPER.getFactory(); // since 2.1 use mapper.getFactory() instead
+            JsonParser jp = factory.createParser(s);
             JsonNode actualObj = MAPPER.readTree(jp);
             Map map = MAPPER.convertValue(actualObj, Map.class);
             System.out.println(map.toString());
@@ -159,7 +167,8 @@ public class Main {
                 .filter((Function<Map, Boolean>) map -> (map.get("towerFailsHistory") != null))
                 .filter((Function<Map, Boolean>) map -> ((Integer) map.get("simulationId") == DAO.getInstance().getLastSimulationID()))
                 .filter((Function<Map, Boolean>) map -> {
-                    List<Double> failsHistory = MAPPER.readValue(map.get("towerFailsHistory").toString(), new TypeReference<List<Double>>(){});
+                    List<Double> failsHistory = MAPPER.readValue(map.get("towerFailsHistory").toString(), new TypeReference<List<Double>>() {
+                    });
                     return (!(failsHistory.size() < 5));
                 })
                 .mapToPair((PairFunction<Map, String, Tuple2<Double, Double>>) stat -> {
@@ -171,35 +180,37 @@ public class Main {
                 });
 
         JavaPairDStream<String, Double> towerErrorPercent = windowTowerStatus.join(windowFailCalculate)
-            .mapToPair((PairFunction<Tuple2<String, Tuple2<Tuple2<Integer,Integer>, Tuple2<Double, Double>>>,String, Double>) stats -> {
+                .mapToPair((PairFunction<Tuple2<String, Tuple2<Tuple2<Integer, Integer>, Tuple2<Double, Double>>>, String, Double>) stats -> {
                     double avg = stats._2()._2()._1();
                     double sigma = stats._2()._2()._2();
-                    double fails = ((double)stats._2()._1()._1()/stats._2()._1()._2());
-                    Double result = (Math.abs(fails - avg) / (3 * sigma));
-                    return new Tuple2<>(stats._1(), result.doubleValue());
-            });
+                    double fails = ((double) stats._2()._1()._1() / stats._2()._1()._2());
+                    double result = (Math.abs(fails - avg) / (3 * sigma));
+                    return new Tuple2<>(stats._1(), result);
+                });
 
         towerErrorPercent
-                .filter((Function<Tuple2<String,Double>, Boolean>) val -> (val._2() >= 1) && (!(val._2().isInfinite())) && (!val._2().isNaN()))
-                .map((Function<Tuple2<String, Double>, String>) tuple ->
-                         new JSONObject()
-                                .put("towerId", tuple._1())
-                                .put("percentOfFails", tuple._2())
-                                .put("type", "deviation").toString()
+                .filter((Function<Tuple2<String, Double>, Boolean>) val -> (val._2() >= 1) && (!(val._2().isInfinite())) && (!val._2().isNaN()))
+                .map((Function<Tuple2<String, Double>, String>) tuple -> {
+                            ObjectNode obj = MAPPER.createObjectNode();
+                            obj.put("towerId", tuple._1());
+                            obj.put("percentOfFails", tuple._2());
+                            obj.put("type", "deviation");
+                            return obj.toString();
+                        }
                 ).foreachRDD((Function<JavaRDD<String>, Void>) stringJavaRDD -> {
-            stringJavaRDD.foreach((VoidFunction<String>) s ->
-                getKafkaProducer().send(new ProducerRecord<>(Config.getTopicPath(Config.FAIL_TOWER_STREAM), s)));
-            return null;
-        });
+                    stringJavaRDD.foreach((VoidFunction<String>) s ->
+                            getKafkaProducer().send(new ProducerRecord<>(Config.getTopicPath(Config.FAIL_TOWER_STREAM), s)));
+                    return null;
+                });
 
 
         // Join tower stat into single document
         JavaPairDStream<String, Document> resultStat = towerStat.join(towerAllInfo)
-                            .mapValues((Function<Tuple2<Map, Double>, Map>) values -> {
-            Map tmp = new LinkedHashMap(values._1());
-            tmp.put("towerAllInfo", values._2());
-            return tmp;
-        })
+                .mapValues((Function<Tuple2<Map, Double>, Map>) values -> {
+                    Map tmp = new LinkedHashMap(values._1());
+                    tmp.put("towerAllInfo", values._2());
+                    return tmp;
+                })
                 .join(towerFailsGlobal).mapValues((Function<Tuple2<Map, Double>, Map>) values -> {
                     Map tmp = new LinkedHashMap(values._1());
                     tmp.put("towerFails", values._2());
@@ -226,11 +237,11 @@ public class Main {
                     } else {
                         means = new ArrayList();
                     }
-                    means.add(values._2()._1().doubleValue()/values._2()._2());
+                    means.add(values._2()._1().doubleValue() / values._2()._2());
                     tmp.put("towerFailsHistory", means);
                     return tmp;
                 })
-        .mapValues((Function<Map, Document>) MapRDB::newDocument);
+                .mapValues((Function<Map, Document>) MapRDB::newDocument);
 
         resultStat.foreachRDD((Function<JavaPairRDD<String, Document>, Void>) statsRDD -> {
             statsRDD.foreach((VoidFunction<Tuple2<String, Document>>) stats -> DAO.getInstance().sendTowerStats(stats._2()));
@@ -241,14 +252,14 @@ public class Main {
 
     private static Set<String> getTopics() {
         Set<String> topics = new HashSet<>();
-        for (int i = 1; i<= Config.TOWER_COUNT; i++) {
+        for (int i = 1; i <= Config.TOWER_COUNT; i++) {
             topics.add(Config.getTopicPath("tower" + i));
         }
         System.out.println(topics);
         return topics;
     }
 
-    private static JavaPairDStream<String, Integer> filterCDRByFail( JavaPairDStream<String, CDR> towerCDRs ){
+    private static JavaPairDStream<String, Integer> filterCDRByFail(JavaPairDStream<String, CDR> towerCDRs) {
         return towerCDRs
                 .filter((Function<Tuple2<String, CDR>, Boolean>) tuple -> tuple._2().getState() == CDR.State.FAIL)
                 .groupByKey()
@@ -265,7 +276,7 @@ public class Main {
                 .mapValues((Function<Iterable<CDR>, Integer>) Iterables::size);
     }
 
-    private static Double calcAvg(List<Double> list){
+    private static Double calcAvg(List<Double> list) {
         return list
                 .stream()
                 .mapToDouble(a -> a)
@@ -273,11 +284,11 @@ public class Main {
                 .getAsDouble();
     }
 
-    private static Double calcSigma(List<Double> list, Double m){
+    private static Double calcSigma(List<Double> list, Double m) {
         return Math.sqrt(list
-                            .stream()
-                            .mapToDouble(a -> Math.pow((a - m), 2))
-                            .sum());
+                .stream()
+                .mapToDouble(a -> Math.pow((a - m), 2))
+                .sum());
     }
 
     private static KafkaProducer<String, String> producer = null;
@@ -303,15 +314,12 @@ public class Main {
         }
 
         private static JavaPairDStream<String, Map> chain(JavaPairDStream<String, Map> innerStream,
-                                                             JavaPairDStream<String, Double> stream,
-                                                             final String paramName) {
-            innerStream = innerStream.join(stream).mapValues(new Function<Tuple2<Map,Double>, Map>() {
-                @Override
-                public Map call(Tuple2<Map, Double> values) throws Exception {
-                    Map tmp = new LinkedHashMap(values._1());
-                    tmp.put(paramName, values._2());
-                    return tmp;
-                }
+                                                          JavaPairDStream<String, Double> stream,
+                                                          final String paramName) {
+            innerStream = innerStream.join(stream).mapValues((Function<Tuple2<Map, Double>, Map>) values -> {
+                Map tmp = new LinkedHashMap(values._1());
+                tmp.put(paramName, values._2());
+                return tmp;
             });
             return innerStream;
         }
